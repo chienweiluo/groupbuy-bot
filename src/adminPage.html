@@ -945,7 +945,8 @@ function openCampaignForm(mode, c = {}) {
   const isEdit = mode === "edit";
   const v = {
     startDate: c.startDate || "", endDate: c.endDate || "", vendor: c.vendor || "", kol: c.kol || "",
-    category: c.category || "", linkSent: !!c.linkSent, status: c.status || "active",
+    // 新增時預設帶後台設定的分類(2026排程);修改時沿用原值
+    category: c.category || (isEdit ? "" : (state.facets.defaultCategory || "")), linkSent: !!c.linkSent, status: c.status || "active",
     revenue: c.revenue ?? "", commission: c.commission ?? "",
   };
   const fields = {};
@@ -955,7 +956,7 @@ function openCampaignForm(mode, c = {}) {
     return el("div", { class: "field" + (span ? " span2" : "") }, el("label", {}, label), inp);
   };
 
-  const catInput = el("input", { type: "text", list: "cat-list-modal", value: v.category, placeholder: "可留空" });
+  const catInput = el("input", { type: "text", list: "cat-list-modal", value: v.category, placeholder: isEdit ? "可留空" : (state.facets.defaultCategory || "可留空") });
   fields.category = catInput;
   const linkCheck = el("input", { type: "checkbox" }); linkCheck.checked = v.linkSent;
   const statusSel = el("select", {}, el("option", { value: "active" }, "進行中"), el("option", { value: "cancelled" }, "已取消")); statusSel.value = v.status;

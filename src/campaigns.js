@@ -7,6 +7,8 @@ import { getStartAndEndDates, isWithinWindow, INVALID, today, dayjs } from "./da
 
 const DEFAULT_TENANT = process.env.DEFAULT_TENANT || "default";
 const WINDOW_DAYS = Number(process.env.REMINDER_WINDOW_DAYS || 7);
+// 新增團的預設分類(不論 /add 指令、自然語言或後台,沒指定就帶這個)。舊資料不受影響。
+const DEFAULT_CATEGORY = process.env.DEFAULT_CATEGORY || "2026排程";
 
 // ---- prepared statements ----
 const insertCampaign = db.prepare(
@@ -88,7 +90,7 @@ export function createCampaign(input, actor = null) {
   const run = db.transaction(() => {
     const res = insertCampaign.run({
       tenant_id: tenantId,
-      category: input.category ?? null,
+      category: input.category == null || input.category === "" ? DEFAULT_CATEGORY : input.category,
       start_date: startDate,
       end_date: endDate,
       vendor: input.vendor,
@@ -446,4 +448,4 @@ export function getCampaignHistory(id, tenantId = DEFAULT_TENANT) {
     .all(id, tenantId);
 }
 
-export { DEFAULT_TENANT, WINDOW_DAYS };
+export { DEFAULT_TENANT, WINDOW_DAYS, DEFAULT_CATEGORY };

@@ -18,6 +18,7 @@ import {
   updateCampaign,
   backfillRevenue,
   deleteCampaign,
+  DEFAULT_CATEGORY,
 } from "./campaigns.js";
 import { listAllowed } from "./db.js";
 import { pushTo } from "./lineClient.js";
@@ -57,7 +58,7 @@ export function createAdminRouter() {
   router.post("/admin/api/login", json, (_req, res) => res.json({ ok: true }));
 
   // ---- 篩選器選項 ----
-  router.get("/admin/api/facets", (_req, res) => res.json(listFacets()));
+  router.get("/admin/api/facets", (_req, res) => res.json({ ...listFacets(), defaultCategory: DEFAULT_CATEGORY }));
 
   // ---- 搜尋/列表 ----
   router.get("/admin/api/campaigns", (req, res) => {
