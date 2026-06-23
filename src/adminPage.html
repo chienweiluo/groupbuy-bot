@@ -1,0 +1,1044 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#e8590c" />
+<title>團購後台 · 開團管理</title>
+<style>
+  /* ============================ Tokens ============================ */
+  :root {
+    /* warmth lives in the coral accent + type, not the body bg */
+    --bg:          oklch(0.985 0.005 60);
+    --surface:     oklch(1 0 0);
+    --surface-2:   oklch(0.968 0.006 60);
+    --surface-3:   oklch(0.945 0.008 60);
+
+    --ink:         oklch(0.245 0.018 48);
+    --muted:       oklch(0.485 0.018 48);
+    --faint:       oklch(0.605 0.014 48);
+
+    --border:      oklch(0.905 0.008 60);
+    --border-soft: oklch(0.935 0.006 60);
+
+    --brand:       oklch(0.64 0.178 42);
+    --brand-strong:oklch(0.565 0.165 40);
+    --brand-press: oklch(0.5 0.15 38);
+    --brand-soft:  oklch(0.955 0.035 52);
+    --brand-soft-2:oklch(0.92 0.06 52);
+    --on-brand:    oklch(0.995 0.01 60);
+
+    --success:     oklch(0.585 0.12 152);
+    --success-soft:oklch(0.95 0.05 152);
+    --warning:     oklch(0.6 0.12 70);
+    --warning-soft:oklch(0.955 0.06 80);
+    --danger:      oklch(0.555 0.18 25);
+    --danger-soft: oklch(0.955 0.045 25);
+    --info:        oklch(0.56 0.12 248);
+    --info-soft:   oklch(0.955 0.035 248);
+
+    --shadow-sm: 0 1px 2px oklch(0.3 0.03 48 / 0.06), 0 1px 1px oklch(0.3 0.03 48 / 0.04);
+    --shadow-md: 0 4px 12px oklch(0.3 0.03 48 / 0.08), 0 2px 4px oklch(0.3 0.03 48 / 0.05);
+    --shadow-lg: 0 16px 40px oklch(0.28 0.04 48 / 0.16), 0 4px 12px oklch(0.28 0.04 48 / 0.08);
+
+    --r-xs: 6px; --r-sm: 9px; --r-md: 13px; --r-lg: 18px; --r-pill: 999px;
+    --sp: 4px;
+    --nav-w: 248px;
+    --bottomnav-h: 64px;
+
+    --ease: cubic-bezier(0.22, 1, 0.36, 1);
+    --fast: 130ms; --base: 200ms; --slow: 320ms;
+
+    --z-sticky: 50; --z-nav: 60; --z-backdrop: 100; --z-modal: 110; --z-toast: 200;
+
+    --font: -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC",
+            "Microsoft JhengHei", "Segoe UI", Roboto, system-ui, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg:          oklch(0.205 0.012 50);
+      --surface:     oklch(0.245 0.013 50);
+      --surface-2:   oklch(0.225 0.012 50);
+      --surface-3:   oklch(0.29 0.014 50);
+      --ink:         oklch(0.95 0.01 60);
+      --muted:       oklch(0.74 0.014 60);
+      --faint:       oklch(0.62 0.014 60);
+      --border:      oklch(0.34 0.014 50);
+      --border-soft: oklch(0.305 0.012 50);
+      --brand:       oklch(0.7 0.16 45);
+      --brand-strong:oklch(0.75 0.16 48);
+      --brand-press: oklch(0.78 0.15 50);
+      --brand-soft:  oklch(0.33 0.06 45);
+      --brand-soft-2:oklch(0.4 0.08 45);
+      --on-brand:    oklch(0.16 0.02 48);
+      --success-soft:oklch(0.33 0.05 152);
+      --warning-soft:oklch(0.36 0.06 80);
+      --danger-soft: oklch(0.34 0.06 25);
+      --info-soft:   oklch(0.33 0.04 248);
+      --shadow-sm: 0 1px 2px oklch(0 0 0 / 0.3);
+      --shadow-md: 0 4px 14px oklch(0 0 0 / 0.4);
+      --shadow-lg: 0 18px 44px oklch(0 0 0 / 0.55);
+    }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: break-word;
+  }
+  h1,h2,h3,h4 { line-height: 1.25; font-weight: 700; letter-spacing: -0.01em; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  a { color: var(--brand-strong); }
+  ::selection { background: var(--brand-soft-2); }
+  :focus-visible { outline: 2.5px solid var(--brand); outline-offset: 2px; border-radius: var(--r-xs); }
+  [hidden] { display: none !important; }
+
+  /* ============================ Buttons ============================ */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+    min-height: 40px; padding: 0 16px; border: 1px solid transparent;
+    border-radius: var(--r-sm); font-size: 0.9rem; font-weight: 600;
+    background: var(--surface-2); color: var(--ink); border-color: var(--border);
+    transition: background var(--fast) var(--ease), border-color var(--fast), transform var(--fast), box-shadow var(--fast);
+    white-space: nowrap; user-select: none;
+  }
+  .btn:hover { background: var(--surface-3); }
+  .btn:active { transform: translateY(1px); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+  .btn--primary { background: var(--brand); color: var(--on-brand); border-color: transparent; box-shadow: var(--shadow-sm); }
+  .btn--primary:hover { background: var(--brand-strong); }
+  .btn--primary:active { background: var(--brand-press); }
+  .btn--ghost { background: transparent; border-color: transparent; }
+  .btn--ghost:hover { background: var(--surface-2); }
+  .btn--danger { color: var(--danger); border-color: color-mix(in oklab, var(--danger) 35%, var(--border)); background: var(--surface); }
+  .btn--danger:hover { background: var(--danger-soft); }
+  .btn--sm { min-height: 33px; padding: 0 11px; font-size: 0.82rem; border-radius: var(--r-xs); gap: 5px; }
+  .btn--icon { padding: 0; width: 40px; min-height: 40px; }
+  .btn--block { width: 100%; }
+  .btn .spin { width: 15px; height: 15px; border-radius: 50%; border: 2px solid currentColor; border-top-color: transparent; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ============================ Inputs ============================ */
+  .field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .field > label { font-size: 0.8rem; font-weight: 600; color: var(--muted); }
+  .field .hint { font-size: 0.74rem; color: var(--faint); }
+  input[type=text], input[type=number], input[type=date], input[type=password], select, textarea {
+    width: 100%; min-height: 42px; padding: 9px 12px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm);
+    font-size: 0.92rem; transition: border-color var(--fast), box-shadow var(--fast), background var(--fast);
+    appearance: none;
+  }
+  textarea { min-height: 96px; resize: vertical; line-height: 1.55; }
+  input:focus, select:focus, textarea:focus {
+    outline: none; border-color: var(--brand);
+    box-shadow: 0 0 0 3.5px color-mix(in oklab, var(--brand) 18%, transparent);
+  }
+  input::placeholder, textarea::placeholder { color: var(--faint); }
+  select {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 11px center; padding-right: 34px; cursor: pointer;
+  }
+  .check { display: inline-flex; align-items: center; gap: 9px; cursor: pointer; user-select: none; font-size: 0.92rem; min-height: 42px; }
+  .check input { width: 20px; height: 20px; accent-color: var(--brand); cursor: pointer; }
+
+  /* ============================ App shell ============================ */
+  #app { min-height: 100dvh; }
+  .shell { display: grid; grid-template-columns: var(--nav-w) 1fr; min-height: 100dvh; }
+
+  .sidebar {
+    grid-row: 1; background: var(--surface-2); border-right: 1px solid var(--border-soft);
+    display: flex; flex-direction: column; gap: 4px; padding: 18px 14px;
+    position: sticky; top: 0; height: 100dvh; align-self: start;
+  }
+  .brand { display: flex; align-items: center; gap: 11px; padding: 6px 8px 18px; }
+  .brand .mark {
+    width: 38px; height: 38px; border-radius: 11px; flex: none;
+    background: linear-gradient(150deg, var(--brand), var(--brand-press));
+    display: grid; place-items: center; color: var(--on-brand); font-size: 20px; box-shadow: var(--shadow-sm);
+  }
+  .brand .name { font-size: 1.02rem; font-weight: 800; letter-spacing: -0.02em; }
+  .brand .sub { font-size: 0.72rem; color: var(--faint); font-weight: 500; }
+
+  .nav-item {
+    display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: var(--r-sm);
+    color: var(--muted); font-weight: 600; font-size: 0.92rem; border: none; background: none; width: 100%; text-align: left;
+    transition: background var(--fast), color var(--fast);
+  }
+  .nav-item svg { width: 20px; height: 20px; flex: none; }
+  .nav-item:hover { background: var(--surface-3); color: var(--ink); }
+  .nav-item.active { background: var(--brand-soft); color: var(--brand-strong); }
+  .nav-spacer { flex: 1; }
+  .nav-foot { padding: 10px 12px; font-size: 0.74rem; color: var(--faint); border-top: 1px solid var(--border-soft); margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
+
+  .main { min-width: 0; display: flex; flex-direction: column; }
+  .topbar {
+    position: sticky; top: 0; z-index: var(--z-sticky);
+    display: flex; align-items: center; gap: 12px; padding: 14px clamp(16px, 3vw, 30px);
+    background: color-mix(in oklab, var(--bg) 82%, transparent); backdrop-filter: saturate(1.4) blur(10px);
+    border-bottom: 1px solid var(--border-soft);
+  }
+  .topbar h1 { font-size: 1.18rem; font-weight: 800; }
+  .topbar .sub { font-size: 0.78rem; color: var(--faint); font-weight: 500; margin-top: 1px; }
+  .topbar .grow { flex: 1; }
+  .content { padding: clamp(16px, 3vw, 30px); max-width: 1280px; width: 100%; flex: 1; }
+
+  /* ============================ Bottom nav (mobile) ============================ */
+  .bottomnav { display: none; }
+
+  @media (max-width: 860px) {
+    .shell { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .content { padding-bottom: calc(var(--bottomnav-h) + env(safe-area-inset-bottom) + 22px); }
+    .bottomnav {
+      display: grid; grid-auto-flow: column; grid-auto-columns: 1fr;
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: var(--z-nav);
+      background: color-mix(in oklab, var(--surface) 90%, transparent); backdrop-filter: blur(14px) saturate(1.4);
+      border-top: 1px solid var(--border); padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
+    }
+    .bottomnav button {
+      display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 7px 4px;
+      background: none; border: none; color: var(--faint); font-size: 0.68rem; font-weight: 600; border-radius: var(--r-sm);
+    }
+    .bottomnav button svg { width: 23px; height: 23px; }
+    .bottomnav button.active { color: var(--brand-strong); }
+  }
+
+  /* ============================ Cards / panels ============================ */
+  .panel { background: var(--surface); border: 1px solid var(--border-soft); border-radius: var(--r-lg); box-shadow: var(--shadow-sm); }
+  .panel + .panel { margin-top: 18px; }
+  .panel-head { display: flex; align-items: center; gap: 12px; padding: 16px 18px; border-bottom: 1px solid var(--border-soft); flex-wrap: wrap; }
+  .panel-head h2 { font-size: 1.02rem; }
+  .panel-head .grow { flex: 1; }
+  .panel-body { padding: 18px; }
+
+  /* ============================ Filters ============================ */
+  .filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+  .filters .field.wide { grid-column: 1 / -1; }
+  .filter-foot { display: flex; align-items: center; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+  .filter-foot .grow { flex: 1; }
+  .result-count { font-size: 0.84rem; color: var(--muted); font-weight: 600; }
+  details.mobile-filter > summary { display: none; }
+
+  /* ============================ Table → cards ============================ */
+  .table-wrap { width: 100%; }
+  table.grid { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  table.grid thead th {
+    text-align: left; font-size: 0.76rem; font-weight: 700; color: var(--muted); text-transform: none;
+    padding: 11px 14px; border-bottom: 1px solid var(--border); white-space: nowrap; position: sticky; top: 0;
+    background: var(--surface); cursor: pointer; user-select: none;
+  }
+  table.grid thead th.no-sort { cursor: default; }
+  table.grid thead th .arr { color: var(--brand); margin-left: 3px; font-size: 0.7rem; }
+  table.grid tbody td { padding: 13px 14px; border-bottom: 1px solid var(--border-soft); vertical-align: middle; }
+  table.grid tbody tr { transition: background var(--fast); }
+  table.grid tbody tr:hover { background: var(--surface-2); }
+  .cell-main { font-weight: 650; color: var(--ink); }
+  .cell-sub { color: var(--muted); font-size: 0.82rem; }
+  .num { font-variant-numeric: tabular-nums; }
+  .row-actions { display: flex; gap: 6px; justify-content: flex-end; }
+
+  .badge { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: var(--r-pill); font-size: 0.74rem; font-weight: 700; white-space: nowrap; }
+  .badge.ok { background: var(--success-soft); color: var(--success); }
+  .badge.warn { background: var(--warning-soft); color: var(--warning); }
+  .badge.dim { background: var(--surface-3); color: var(--muted); }
+  .badge.danger { background: var(--danger-soft); color: var(--danger); }
+  .badge .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: var(--r-xs); background: var(--brand-soft); color: var(--brand-strong); font-size: 0.74rem; font-weight: 600; }
+
+  @media (max-width: 760px) {
+    table.grid thead { display: none; }
+    table.grid, table.grid tbody, table.grid tr, table.grid td { display: block; width: 100%; }
+    table.grid tr {
+      border: 1px solid var(--border-soft); border-radius: var(--r-md); margin-bottom: 12px; padding: 6px 4px;
+      background: var(--surface); box-shadow: var(--shadow-sm);
+    }
+    table.grid tbody td { border: none; padding: 7px 14px; display: flex; justify-content: space-between; align-items: center; gap: 14px; }
+    table.grid tbody td::before { content: attr(data-label); font-size: 0.76rem; font-weight: 700; color: var(--faint); flex: none; }
+    table.grid tbody td.full { flex-direction: column; align-items: stretch; }
+    table.grid td.actions-cell { padding-top: 10px; margin-top: 4px; border-top: 1px solid var(--border-soft); }
+    table.grid td.actions-cell::before { display: none; }
+    .row-actions { justify-content: stretch; width: 100%; }
+    .row-actions .btn { flex: 1; }
+  }
+
+  /* ============================ Pagination ============================ */
+  .pager { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 18px; }
+  .pager .info { font-size: 0.84rem; color: var(--muted); font-weight: 600; }
+
+  /* ============================ Summary ============================ */
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
+  .kpi { background: var(--surface); border: 1px solid var(--border-soft); border-radius: var(--r-md); padding: 16px 18px; box-shadow: var(--shadow-sm); }
+  .kpi .k-label { font-size: 0.8rem; color: var(--muted); font-weight: 600; display: flex; align-items: center; gap: 7px; }
+  .kpi .k-value { font-size: 1.85rem; font-weight: 800; letter-spacing: -0.02em; margin-top: 7px; line-height: 1; }
+  .kpi .k-value .unit { font-size: 0.9rem; font-weight: 600; color: var(--faint); margin-left: 3px; }
+  .kpi .k-foot { font-size: 0.76rem; color: var(--faint); margin-top: 7px; }
+  .kpi.accent { background: linear-gradient(160deg, var(--brand-soft), color-mix(in oklab, var(--brand-soft) 40%, var(--surface))); border-color: var(--brand-soft-2); }
+  .kpi.accent .k-value { color: var(--brand-strong); }
+
+  .breakdown { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 18px; }
+  .bars { display: flex; flex-direction: column; gap: 11px; }
+  .bar-row { display: grid; grid-template-columns: minmax(72px, 30%) 1fr auto; align-items: center; gap: 12px; font-size: 0.85rem; }
+  .bar-row .b-label { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar-row .b-track { height: 9px; background: var(--surface-3); border-radius: var(--r-pill); overflow: hidden; }
+  .bar-row .b-fill { height: 100%; border-radius: var(--r-pill); background: linear-gradient(90deg, var(--brand), var(--brand-strong)); transform-origin: left; }
+  .bar-row .b-val { font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; min-width: 38px; text-align: right; }
+  .seg { display: inline-flex; background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 3px; gap: 2px; }
+  .seg button { padding: 6px 12px; border: none; background: none; border-radius: var(--r-xs); font-size: 0.82rem; font-weight: 600; color: var(--muted); }
+  .seg button.active { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-sm); }
+
+  /* ============================ Notify ============================ */
+  .notify-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+  .notify-card { background: var(--surface); border: 1px solid var(--border-soft); border-radius: var(--r-md); padding: 18px; display: flex; flex-direction: column; gap: 12px; box-shadow: var(--shadow-sm); }
+  .notify-card .nc-icon { width: 42px; height: 42px; border-radius: 11px; display: grid; place-items: center; background: var(--brand-soft); color: var(--brand-strong); }
+  .notify-card h3 { font-size: 1rem; }
+  .notify-card p { font-size: 0.84rem; color: var(--muted); flex: 1; }
+  .conv-list { display: flex; flex-direction: column; gap: 8px; }
+  .conv { display: flex; align-items: center; gap: 11px; padding: 11px 13px; border: 1px solid var(--border-soft); border-radius: var(--r-sm); background: var(--surface-2); font-size: 0.86rem; }
+  .conv .c-id { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.76rem; color: var(--faint); word-break: break-all; }
+
+  /* ============================ Modals ============================ */
+  dialog {
+    border: none; padding: 0; border-radius: var(--r-lg); box-shadow: var(--shadow-lg);
+    background: var(--surface); color: var(--ink); max-width: min(540px, calc(100vw - 28px)); width: 100%;
+    max-height: calc(100dvh - 40px);
+    margin: auto; /* restore native centering (the * reset zeroes it) */
+    display: flex; flex-direction: column;
+  }
+  dialog::backdrop { background: oklch(0.2 0.02 48 / 0.5); backdrop-filter: blur(3px); }
+  dialog[open] { animation: dlg-in var(--base) var(--ease); }
+  dialog[open]::backdrop { animation: fade-in var(--base) var(--ease); }
+  @keyframes dlg-in { from { opacity: 0; transform: translateY(14px) scale(0.97); } }
+  @keyframes fade-in { from { opacity: 0; } }
+  .dlg-head { display: flex; align-items: flex-start; gap: 12px; padding: 20px 22px 0; }
+  .dlg-head h2 { font-size: 1.16rem; flex: 1; }
+  .dlg-head .x { width: 34px; height: 34px; border-radius: var(--r-sm); border: none; background: var(--surface-2); color: var(--muted); display: grid; place-items: center; font-size: 18px; }
+  .dlg-head .x:hover { background: var(--surface-3); color: var(--ink); }
+  .dlg-body { padding: 18px 22px; overflow-y: auto; flex: 1; min-height: 0; }
+  .dlg-foot { display: flex; gap: 10px; padding: 16px 22px 20px; border-top: 1px solid var(--border-soft); }
+  .dlg-foot .grow { flex: 1; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-grid .span2 { grid-column: 1 / -1; }
+  @media (max-width: 480px) { .form-grid { grid-template-columns: 1fr; } }
+
+  /* ============================ Skeleton / empty ============================ */
+  .skel { background: linear-gradient(90deg, var(--surface-2) 25%, var(--surface-3) 50%, var(--surface-2) 75%); background-size: 200% 100%; animation: shimmer 1.3s linear infinite; border-radius: var(--r-xs); height: 14px; }
+  @keyframes shimmer { to { background-position: -200% 0; } }
+  .empty { text-align: center; padding: 56px 20px; color: var(--muted); }
+  .empty .e-icon { width: 56px; height: 56px; margin: 0 auto 16px; border-radius: var(--r-md); background: var(--brand-soft); color: var(--brand-strong); display: grid; place-items: center; }
+  .empty h3 { font-size: 1.05rem; color: var(--ink); margin-bottom: 6px; }
+  .empty p { font-size: 0.88rem; }
+
+  /* ============================ Toast ============================ */
+  #toasts { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: var(--z-toast); display: flex; flex-direction: column; gap: 10px; align-items: center; width: max-content; max-width: calc(100vw - 24px); }
+  @media (max-width: 860px) { #toasts { bottom: calc(var(--bottomnav-h) + env(safe-area-inset-bottom) + 14px); } }
+  .toast { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: var(--r-sm); background: var(--ink); color: var(--bg); font-size: 0.88rem; font-weight: 600; box-shadow: var(--shadow-lg); animation: toast-in var(--base) var(--ease); }
+  .toast.ok { background: var(--success); color: #fff; }
+  .toast.err { background: var(--danger); color: #fff; }
+  @keyframes toast-in { from { opacity: 0; transform: translateY(12px); } }
+
+  /* ============================ Login ============================ */
+  .login { min-height: 100dvh; display: grid; place-items: center; padding: 24px; }
+  .login-card { width: 100%; max-width: 400px; background: var(--surface); border: 1px solid var(--border-soft); border-radius: var(--r-lg); box-shadow: var(--shadow-md); padding: 30px; }
+  .login-card .mark { width: 52px; height: 52px; border-radius: 14px; background: linear-gradient(150deg, var(--brand), var(--brand-press)); display: grid; place-items: center; color: var(--on-brand); font-size: 27px; margin-bottom: 18px; box-shadow: var(--shadow-sm); }
+  .login-card h1 { font-size: 1.4rem; margin-bottom: 6px; }
+  .login-card p { color: var(--muted); font-size: 0.9rem; margin-bottom: 22px; }
+
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0; }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  }
+</style>
+</head>
+<body>
+<div id="app"><div class="login"><div class="skel" style="width:200px;height:40px"></div></div></div>
+<div id="toasts" aria-live="polite"></div>
+
+<script>
+/* ============================================================
+   團購後台 SPA — vanilla JS, single file. API under /admin/api/*
+   ============================================================ */
+"use strict";
+
+const TOKEN_KEY = "gb_admin_token";
+const state = {
+  token: localStorage.getItem(TOKEN_KEY) || "",
+  view: "list",
+  facets: { categories: [], kols: [], vendors: [] },
+  filters: { q: "", from: "", to: "", kol: "", vendor: "", category: "", status: "", linkSent: "", sort: "start_date", order: "desc" },
+  page: 1, pageSize: 50,
+  list: null, loading: false,
+  summary: null, summaryRange: "all", summaryStatus: "active", summaryTab: "byKol",
+  allowlist: null,
+};
+
+/* ---------------- helpers ---------------- */
+const $ = (s, r = document) => r.querySelector(s);
+const el = (tag, attrs = {}, ...kids) => {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v == null || v === false) continue;
+    if (k === "class") n.className = v;
+    else if (k === "html") n.innerHTML = v;
+    else if (k.startsWith("on") && typeof v === "function") n.addEventListener(k.slice(2), v);
+    else if (k === "dataset") Object.assign(n.dataset, v);
+    else n.setAttribute(k, v === true ? "" : v);
+  }
+  for (const kid of kids.flat()) { if (kid == null || kid === false) continue; n.append(kid.nodeType ? kid : document.createTextNode(kid)); }
+  return n;
+};
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const fmtMoney = (n) => n == null ? "—" : "$" + Number(n).toLocaleString("en-US");
+const fmtNum = (n) => Number(n || 0).toLocaleString("en-US");
+const todayISO = () => new Date().toISOString().slice(0, 10);
+const debounce = (fn, ms = 320) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+
+function toast(msg, kind = "") {
+  const t = el("div", { class: "toast " + kind }, msg);
+  $("#toasts").append(t);
+  setTimeout(() => { t.style.transition = "opacity .25s, transform .25s"; t.style.opacity = "0"; t.style.transform = "translateY(8px)"; setTimeout(() => t.remove(), 260); }, 2600);
+}
+
+/* ---------------- API ---------------- */
+async function api(path, opts = {}) {
+  const res = await fetch("/admin/api" + path, {
+    ...opts,
+    headers: { "x-admin-token": state.token, ...(opts.body ? { "content-type": "application/json" } : {}), ...(opts.headers || {}) },
+  });
+  if (res.status === 401) { logout(true); throw new Error("未授權,請重新登入"); }
+  let data = null;
+  try { data = await res.json(); } catch { /* no body */ }
+  if (!res.ok) throw new Error((data && data.error) || ("發生錯誤(" + res.status + ")"));
+  return data;
+}
+
+/* ---------------- icons ---------------- */
+const I = {
+  list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>',
+  chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',
+  bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>',
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+  edit: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/></svg>',
+  money: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+  trash: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>',
+  search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
+  inbox: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>',
+  send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>',
+};
+
+/* ============================================================
+   Login
+   ============================================================ */
+function renderLogin() {
+  const app = $("#app");
+  app.innerHTML = "";
+  const input = el("input", { type: "password", id: "tok", placeholder: "ADMIN_TOKEN", autocomplete: "current-password" });
+  const btn = el("button", { class: "btn btn--primary btn--block", style: "margin-top:18px" }, "進入後台");
+  const submit = async () => {
+    const v = input.value.trim();
+    if (!v) { input.focus(); return; }
+    btn.disabled = true; btn.textContent = "驗證中…";
+    try {
+      state.token = v;
+      await api("/login", { method: "POST", body: "{}" });
+      localStorage.setItem(TOKEN_KEY, v);
+      boot();
+    } catch (e) {
+      state.token = "";
+      btn.disabled = false; btn.textContent = "進入後台";
+      toast(e.message || "Token 不正確", "err");
+      input.select();
+    }
+  };
+  btn.addEventListener("click", submit);
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter") submit(); });
+  app.append(
+    el("div", { class: "login" },
+      el("form", { class: "login-card", onsubmit: (e) => e.preventDefault() },
+        el("div", { class: "mark" }, "🛒"),
+        el("h1", {}, "團購後台"),
+        el("p", {}, "輸入管理 Token 以存取全部開團資料。"),
+        el("div", { class: "field" }, el("label", { for: "tok" }, "管理 Token"), input),
+        btn,
+      )
+    )
+  );
+  setTimeout(() => input.focus(), 60);
+}
+
+function logout(silent) {
+  localStorage.removeItem(TOKEN_KEY);
+  state.token = "";
+  if (!silent) toast("已登出");
+  renderLogin();
+}
+
+/* ============================================================
+   App shell
+   ============================================================ */
+const NAV = [
+  { id: "list", label: "開團列表", icon: I.list },
+  { id: "summary", label: "業績總結", icon: I.chart },
+  { id: "notify", label: "發起通知", icon: I.bell },
+];
+
+function renderShell() {
+  const app = $("#app");
+  app.innerHTML = "";
+  const sideNav = NAV.map((n) =>
+    el("button", { class: "nav-item" + (state.view === n.id ? " active" : ""), onclick: () => go(n.id), html: n.icon + "<span>" + n.label + "</span>" })
+  );
+  const botNav = NAV.map((n) =>
+    el("button", { class: state.view === n.id ? "active" : "", onclick: () => go(n.id), html: n.icon + "<span>" + n.label + "</span>" })
+  );
+
+  app.append(
+    el("div", { class: "shell" },
+      el("aside", { class: "sidebar" },
+        el("div", { class: "brand" },
+          el("div", { class: "mark" }, "🛒"),
+          el("div", {}, el("div", { class: "name" }, "團購後台"), el("div", { class: "sub" }, "開團管理中心"))
+        ),
+        ...sideNav,
+        el("div", { class: "nav-spacer" }),
+        el("div", { class: "nav-foot" },
+          el("button", { class: "btn btn--sm btn--ghost", style: "justify-content:flex-start", onclick: () => logout(false) }, "登出"),
+        )
+      ),
+      el("main", { class: "main" },
+        el("div", { id: "topbar", class: "topbar" }),
+        el("div", { id: "content", class: "content" })
+      ),
+      el("nav", { class: "bottomnav" }, ...botNav)
+    )
+  );
+  renderView();
+}
+
+function go(view) { state.view = view; renderShell(); }
+
+function setTopbar(title, sub, ...actions) {
+  const tb = $("#topbar");
+  tb.innerHTML = "";
+  tb.append(
+    el("div", {}, el("h1", {}, title), sub ? el("div", { class: "sub" }, sub) : null),
+    el("div", { class: "grow" }),
+    ...actions
+  );
+}
+
+function renderView() {
+  if (state.view === "list") renderList();
+  else if (state.view === "summary") renderSummary();
+  else if (state.view === "notify") renderNotify();
+}
+
+/* ============================================================
+   View: 開團列表 + 搜尋
+   ============================================================ */
+function renderList() {
+  setTopbar("開團列表", "多維度搜尋 · 增改刪 · 回填",
+    el("button", { class: "btn btn--primary", onclick: () => openCampaignForm("create"), html: I.plus + "<span>新增開團</span>" })
+  );
+  const c = $("#content");
+  c.innerHTML = "";
+
+  const f = state.filters;
+  const catOpts = [el("option", { value: "" }, "全部分類"), ...state.facets.categories.map((x) => el("option", { value: x.value }, `${x.value}(${x.count})`)), el("option", { value: "__none__" }, "未分類")];
+
+  const mkInput = (key, attrs) => {
+    const inp = el("input", { ...attrs, value: f[key] });
+    inp.addEventListener("input", debounce((e) => { f[key] = e.target.value; state.page = 1; loadList(); }));
+    return inp;
+  };
+  const mkSelect = (key, options) => {
+    const s = el("select", {}, ...options);
+    s.value = f[key];
+    s.addEventListener("change", (e) => { f[key] = e.target.value; state.page = 1; loadList(); });
+    return s;
+  };
+
+  const filters = el("div", { class: "filters" },
+    el("div", { class: "field wide" }, el("label", {}, "搜尋(廠商 / 團主)"), mkInput("q", { type: "text", placeholder: "輸入廠商或團主關鍵字…", inputmode: "search" })),
+    el("div", { class: "field" }, el("label", {}, "開團日起"), mkInput("from", { type: "date" })),
+    el("div", { class: "field" }, el("label", {}, "開團日迄"), mkInput("to", { type: "date" })),
+    el("div", { class: "field" }, el("label", {}, "團主"), mkInput("kol", { type: "text", placeholder: "團主名稱", list: "kol-list" })),
+    el("div", { class: "field" }, el("label", {}, "廠商"), mkInput("vendor", { type: "text", placeholder: "廠商名稱", list: "vendor-list" })),
+    el("div", { class: "field" }, el("label", {}, "分類"), mkSelect("category", catOpts)),
+    el("div", { class: "field" }, el("label", {}, "狀態"), mkSelect("status", [el("option", { value: "" }, "全部狀態"), el("option", { value: "active" }, "進行中"), el("option", { value: "cancelled" }, "已取消")])),
+    el("div", { class: "field" }, el("label", {}, "連結"), mkSelect("linkSent", [el("option", { value: "" }, "不限"), el("option", { value: "1" }, "已給連結"), el("option", { value: "0" }, "未給連結")])),
+    // datalists for autocomplete
+    el("datalist", { id: "kol-list" }, ...state.facets.kols.slice(0, 60).map((x) => el("option", { value: x.value }))),
+    el("datalist", { id: "vendor-list" }, ...state.facets.vendors.slice(0, 60).map((x) => el("option", { value: x.value }))),
+  );
+
+  const resetBtn = el("button", { class: "btn btn--ghost btn--sm", onclick: () => { state.filters = { q: "", from: "", to: "", kol: "", vendor: "", category: "", status: "", linkSent: "", sort: "start_date", order: "desc" }; state.page = 1; renderList(); loadList(); } }, "清除條件");
+
+  c.append(
+    el("section", { class: "panel" },
+      el("div", { class: "panel-body" },
+        filters,
+        el("div", { class: "filter-foot" },
+          el("span", { id: "result-count", class: "result-count" }, "載入中…"),
+          el("div", { class: "grow" }),
+          resetBtn
+        )
+      )
+    ),
+    el("section", { id: "list-panel", class: "panel", style: "margin-top:18px" }, el("div", { id: "list-body" }, skeletonTable()))
+  );
+
+  if (!state.list) loadList();
+  else paintList();
+}
+
+function skeletonTable() {
+  const rows = Array.from({ length: 6 }, () =>
+    el("div", { style: "display:flex;gap:14px;padding:14px 16px;border-bottom:1px solid var(--border-soft)" },
+      el("div", { class: "skel", style: "width:90px" }), el("div", { class: "skel", style: "flex:1" }), el("div", { class: "skel", style: "width:80px" }), el("div", { class: "skel", style: "width:60px" }))
+  );
+  return el("div", {}, ...rows);
+}
+
+async function loadList() {
+  const f = state.filters;
+  const qs = new URLSearchParams();
+  Object.entries({ q: f.q, from: f.from, to: f.to, kol: f.kol, vendor: f.vendor, category: f.category, status: f.status, linkSent: f.linkSent, sort: f.sort, order: f.order, page: state.page, pageSize: state.pageSize }).forEach(([k, v]) => { if (v !== "" && v != null) qs.set(k, v); });
+  const cnt = $("#result-count"); if (cnt) cnt.textContent = "搜尋中…";
+  try {
+    state.list = await api("/campaigns?" + qs.toString());
+    paintList();
+  } catch (e) { toast(e.message, "err"); }
+}
+
+function statusBadge(c) {
+  if (c.status === "cancelled") return el("span", { class: "badge dim" }, "已取消");
+  return el("span", { class: "badge ok", html: '<span class="dot"></span>進行中' });
+}
+function linkBadge(c) {
+  return c.linkSent ? el("span", { class: "badge ok" }, "已給連結") : el("span", { class: "badge warn" }, "未給連結");
+}
+
+const COLS = [
+  { key: "start_date", label: "檔期", sortable: true },
+  { key: "vendor", label: "廠商 / 團主", sortable: true },
+  { key: "category", label: "分類", sortable: true },
+  { key: "link", label: "連結", sortable: false },
+  { key: "revenue", label: "業績 / 分潤", sortable: true },
+  { key: "status", label: "狀態", sortable: false },
+  { key: "actions", label: "", sortable: false },
+];
+
+function paintList() {
+  const body = $("#list-body");
+  if (!body) return;
+  body.innerHTML = "";
+  const { rows, total, page, pageSize } = state.list;
+  const cnt = $("#result-count");
+  if (cnt) cnt.textContent = `共 ${fmtNum(total)} 筆` + (total > pageSize ? ` · 第 ${page} 頁` : "");
+
+  if (!rows.length) {
+    body.append(el("div", { class: "empty" },
+      el("div", { class: "e-icon", html: I.inbox }),
+      el("h3", {}, "找不到符合的團"),
+      el("p", {}, "試著放寬搜尋條件,或新增一筆開團。")));
+    return;
+  }
+
+  const f = state.filters;
+  const thead = el("thead", {}, el("tr", {}, ...COLS.map((col) => {
+    if (!col.sortable) return el("th", { class: "no-sort" }, col.label);
+    const active = f.sort === col.key;
+    const th = el("th", { html: col.label + (active ? `<span class="arr">${f.order === "asc" ? "▲" : "▼"}</span>` : "") });
+    th.addEventListener("click", () => { if (f.sort === col.key) f.order = f.order === "asc" ? "desc" : "asc"; else { f.sort = col.key; f.order = "desc"; } loadList(); });
+    return th;
+  })));
+
+  const tbody = el("tbody", {}, ...rows.map((c) => el("tr", {},
+    el("td", { "data-label": "檔期", class: "num" }, el("div", { class: "cell-main" }, c.startDate), c.endDate && c.endDate !== c.startDate ? el("div", { class: "cell-sub" }, "至 " + c.endDate) : null),
+    el("td", { "data-label": "廠商/團主" }, el("div", { class: "cell-main" }, c.vendor), el("div", { class: "cell-sub" }, c.kol)),
+    el("td", { "data-label": "分類" }, c.category ? el("span", { class: "tag" }, c.category) : el("span", { class: "cell-sub" }, "—")),
+    el("td", { "data-label": "連結" }, linkBadge(c)),
+    el("td", { "data-label": "業績/分潤", class: "num" }, el("div", { class: "cell-main" }, fmtMoney(c.revenue)), el("div", { class: "cell-sub" }, "分潤 " + fmtMoney(c.commission))),
+    el("td", { "data-label": "狀態" }, statusBadge(c)),
+    el("td", { class: "actions-cell" }, el("div", { class: "row-actions" },
+      el("button", { class: "btn btn--sm", title: "修改", onclick: () => openCampaignForm("edit", c), html: I.edit + "<span>改</span>" }),
+      el("button", { class: "btn btn--sm", title: "回填業績", onclick: () => openBackfill(c), html: I.money + "<span>回填</span>" }),
+      el("button", { class: "btn btn--sm btn--danger", title: "刪除", onclick: () => confirmDelete(c), html: I.trash }),
+    ))
+  )));
+
+  body.append(el("div", { class: "table-wrap" }, el("table", { class: "grid" }, thead, tbody)));
+
+  // pager
+  const pages = Math.max(1, Math.ceil(total / pageSize));
+  if (pages > 1) {
+    body.append(el("div", { class: "pager" },
+      el("button", { class: "btn btn--sm", disabled: page <= 1, onclick: () => { state.page--; loadList(); } }, "← 上一頁"),
+      el("span", { class: "info" }, `第 ${page} / ${pages} 頁`),
+      el("button", { class: "btn btn--sm", disabled: page >= pages, onclick: () => { state.page++; loadList(); } }, "下一頁 →"),
+    ));
+  }
+}
+
+/* ============================================================
+   View: 業績總結
+   ============================================================ */
+const RANGES = [
+  { id: "all", label: "全部" },
+  { id: "thisYear", label: "今年" },
+  { id: "thisMonth", label: "本月" },
+  { id: "last3", label: "近 3 月" },
+];
+function rangeToDates(id) {
+  const now = new Date();
+  const y = now.getFullYear(), m = now.getMonth();
+  const iso = (d) => d.toISOString().slice(0, 10);
+  if (id === "thisYear") return { from: `${y}-01-01`, to: `${y}-12-31` };
+  if (id === "thisMonth") return { from: iso(new Date(y, m, 1)), to: iso(new Date(y, m + 1, 0)) };
+  if (id === "last3") return { from: iso(new Date(y, m - 2, 1)), to: iso(new Date(y, m + 1, 0)) };
+  return { from: "", to: "" };
+}
+
+function renderSummary() {
+  setTopbar("業績總結", "依日期區間統計開團與業績");
+  const c = $("#content");
+  c.innerHTML = "";
+
+  const rangeSeg = el("div", { class: "seg" }, ...RANGES.map((r) =>
+    el("button", { class: state.summaryRange === r.id ? "active" : "", onclick: () => { state.summaryRange = r.id; loadSummary(); } }, r.label)));
+  const statusSel = el("select", { style: "max-width:160px" },
+    el("option", { value: "active" }, "只算進行中"), el("option", { value: "" }, "含已取消"));
+  statusSel.value = state.summaryStatus;
+  statusSel.addEventListener("change", (e) => { state.summaryStatus = e.target.value; loadSummary(); });
+
+  c.append(
+    el("section", { class: "panel" }, el("div", { class: "panel-body", style: "display:flex;gap:14px;align-items:center;flex-wrap:wrap" },
+      rangeSeg, el("div", { class: "grow", style: "flex:1" }), statusSel)),
+    el("div", { id: "summary-body", style: "margin-top:18px" })
+  );
+  loadSummary();
+}
+
+async function loadSummary() {
+  if ($(".seg")) $$(".seg button").forEach((b) => b.classList.toggle("active", b.textContent === (RANGES.find((r) => r.id === state.summaryRange) || {}).label));
+  const body = $("#summary-body");
+  if (body) { body.innerHTML = ""; body.append(el("section", { class: "panel" }, el("div", { class: "panel-body" }, el("div", { class: "kpis" }, ...Array.from({ length: 5 }, () => el("div", { class: "kpi" }, el("div", { class: "skel", style: "width:60%" }), el("div", { class: "skel", style: "height:28px;margin-top:10px" }))))))); }
+  const { from, to } = rangeToDates(state.summaryRange);
+  const qs = new URLSearchParams();
+  if (from) qs.set("from", from); if (to) qs.set("to", to);
+  if (state.summaryStatus) qs.set("status", state.summaryStatus);
+  try { state.summary = await api("/summary?" + qs.toString()); paintSummary(); }
+  catch (e) { toast(e.message, "err"); }
+}
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+
+function paintSummary() {
+  const body = $("#summary-body");
+  if (!body) return;
+  body.innerHTML = "";
+  const s = state.summary;
+  const t = s.totals;
+  const linkRate = t.total ? Math.round((t.linkSent / t.total) * 100) : 0;
+  const fillRate = t.total ? Math.round((t.withRevenue / t.total) * 100) : 0;
+
+  const kpis = el("div", { class: "kpis" },
+    el("div", { class: "kpi accent" }, el("div", { class: "k-label" }, "開團數"), el("div", { class: "k-value num" }, fmtNum(t.total), el("span", { class: "unit" }, "團")), el("div", { class: "k-foot" }, `${t.kols} 位團主 · ${t.vendors} 家廠商`)),
+    el("div", { class: "kpi" }, el("div", { class: "k-label" }, "已給連結"), el("div", { class: "k-value num" }, linkRate, el("span", { class: "unit" }, "%")), el("div", { class: "k-foot" }, `${fmtNum(t.linkSent)} / ${fmtNum(t.total)} 團`)),
+    el("div", { class: "kpi" }, el("div", { class: "k-label" }, "業績總額"), el("div", { class: "k-value num" }, fmtMoney(t.revenue)), el("div", { class: "k-foot" }, `已回填 ${fmtNum(t.withRevenue)} 團(${fillRate}%)`)),
+    el("div", { class: "kpi" }, el("div", { class: "k-label" }, "分潤總額"), el("div", { class: "k-value num" }, fmtMoney(t.commission)), el("div", { class: "k-foot" }, t.revenue ? `佔業績 ${Math.round((t.commission / t.revenue) * 100)}%` : "—")),
+    el("div", { class: "kpi" }, el("div", { class: "k-label" }, "區間"), el("div", { class: "k-value", style: "font-size:1.05rem" }, s.range.from ? `${s.range.from}` : "全部"), el("div", { class: "k-foot" }, s.range.to ? `至 ${s.range.to}` : "不限日期")),
+  );
+
+  // breakdown tabs
+  const TABS = [{ id: "byKol", label: "團主" }, { id: "byVendor", label: "廠商" }, { id: "byCategory", label: "分類" }, { id: "byMonth", label: "月份" }];
+  const tabSeg = el("div", { class: "seg" }, ...TABS.map((tb) => el("button", { class: state.summaryTab === tb.id ? "active" : "", onclick: () => { state.summaryTab = tb.id; paintBreakdown(); } }, tb.label)));
+
+  body.append(
+    el("section", { class: "panel" }, el("div", { class: "panel-body" }, kpis)),
+    el("section", { class: "panel", style: "margin-top:18px" },
+      el("div", { class: "panel-head" }, el("h2", {}, "細分統計"), el("div", { class: "grow" }), tabSeg),
+      el("div", { id: "breakdown-body", class: "panel-body" })
+    )
+  );
+  paintBreakdown();
+}
+
+function paintBreakdown() {
+  $$(".panel-head .seg button").forEach((b) => {
+    const map = { 團主: "byKol", 廠商: "byVendor", 分類: "byCategory", 月份: "byMonth" };
+    b.classList.toggle("active", map[b.textContent] === state.summaryTab);
+  });
+  const host = $("#breakdown-body");
+  if (!host) return;
+  host.innerHTML = "";
+  const data = (state.summary[state.summaryTab] || []).slice(0, state.summaryTab === "byMonth" ? 36 : 15);
+  if (!data.length) { host.append(el("div", { class: "empty" }, el("h3", {}, "此區間沒有資料"))); return; }
+  const max = Math.max(...data.map((d) => d.total), 1);
+  const sorted = state.summaryTab === "byMonth" ? data : data;
+  host.append(el("div", { class: "bars" }, ...sorted.map((d) => {
+    const pct = (d.total / max) * 100;
+    const fill = el("div", { class: "b-fill", style: "width:0%" });
+    const row = el("div", { class: "bar-row" },
+      el("div", { class: "b-label", title: d.label }, d.label),
+      el("div", { class: "b-track" }, fill),
+      el("div", { class: "b-val" }, fmtNum(d.total) + (d.revenue ? "" : "")),
+    );
+    requestAnimationFrame(() => requestAnimationFrame(() => { fill.style.transition = "width .55s var(--ease)"; fill.style.width = pct + "%"; }));
+    return row;
+  })));
+}
+
+/* ============================================================
+   View: 發起通知
+   ============================================================ */
+function renderNotify() {
+  setTopbar("發起通知", "推播到 LINE 白名單會話");
+  const c = $("#content");
+  c.innerHTML = "";
+
+  const cards = el("div", { class: "notify-grid" },
+    notifyCard("每日提醒", "立即把「未來 7 天要開、還沒打勾」的團推播給所有白名單會話。", "送出每日提醒", async (btn) => {
+      const r = await runNotify("daily", null, btn);
+      if (r) { const sent = (r.results || []).filter((x) => x.sent).length; toast(`已送出每日提醒到 ${sent} 個會話`, "ok"); }
+    }, true),
+    notifyCard("月結激勵", "立即推播上個月的開團數與業績激勵總結(1 月會附年度總結)。", "送出月結", async (btn) => {
+      const r = await runNotify("monthly", null, btn);
+      if (r) toast("已送出月結總結", "ok");
+    }, true),
+  );
+
+  // custom broadcast
+  const ta = el("textarea", { placeholder: "輸入要推播的訊息內容…", maxlength: "4000" });
+  const customCard = el("section", { class: "panel" },
+    el("div", { class: "panel-head" }, el("div", { class: "nc-icon", html: I.send, style: "width:36px;height:36px" }), el("h2", {}, "自訂訊息廣播")),
+    el("div", { class: "panel-body" },
+      el("div", { class: "field" }, el("label", {}, "訊息內容"), ta, el("span", { class: "hint" }, "會以純文字推播給下方所有白名單會話。")),
+      el("div", { style: "margin-top:14px;display:flex;justify-content:flex-end" },
+        el("button", { class: "btn btn--primary", html: I.send + "<span>送出廣播</span>", onclick: async (e) => {
+          const text = ta.value.trim();
+          if (!text) { toast("訊息內容不可為空", "err"); ta.focus(); return; }
+          const ok = await confirmDialog("確認廣播", `將把這則訊息推播給所有白名單會話,確定嗎?`, "送出", false);
+          if (!ok) return;
+          const r = await runNotify("custom", text, e.currentTarget);
+          if (r) { const sent = (r.results || []).filter((x) => x.sent).length; toast(`已廣播到 ${sent} 個會話`, "ok"); ta.value = ""; }
+        } })
+      )
+    )
+  );
+
+  c.append(
+    cards,
+    el("div", { style: "height:18px" }),
+    customCard,
+    el("section", { class: "panel", style: "margin-top:18px" },
+      el("div", { class: "panel-head" }, el("h2", {}, "白名單會話"), el("div", { class: "grow" }), el("span", { id: "allow-count", class: "result-count" }, "")),
+      el("div", { id: "allow-body", class: "panel-body" }, el("div", { class: "skel", style: "height:48px" }))
+    )
+  );
+  loadAllowlist();
+}
+
+function notifyCard(title, desc, btnLabel, handler, danger) {
+  const btn = el("button", { class: "btn btn--block " + (danger ? "btn--primary" : ""), html: I.send + "<span>" + btnLabel + "</span>" });
+  btn.addEventListener("click", async () => {
+    const ok = await confirmDialog("確認發送", `「${title}」會立即推播到真實 LINE 會話,確定送出?`, btnLabel, false);
+    if (ok) handler(btn);
+  });
+  return el("div", { class: "notify-card" },
+    el("div", { class: "nc-icon", html: I.bell }),
+    el("h3", {}, title),
+    el("p", {}, desc),
+    btn
+  );
+}
+
+async function runNotify(type, text, btn) {
+  const orig = btn ? btn.innerHTML : "";
+  if (btn) { btn.disabled = true; btn.innerHTML = '<span class="spin"></span><span>送出中…</span>'; }
+  try {
+    return await api("/notify", { method: "POST", body: JSON.stringify({ type, text }) });
+  } catch (e) { toast(e.message, "err"); return null; }
+  finally { if (btn) { btn.disabled = false; btn.innerHTML = orig; } }
+}
+
+async function loadAllowlist() {
+  try {
+    const { conversations } = await api("/allowlist");
+    state.allowlist = conversations;
+    const host = $("#allow-body"); if (!host) return;
+    host.innerHTML = "";
+    const cnt = $("#allow-count"); if (cnt) cnt.textContent = `${conversations.length} 個`;
+    if (!conversations.length) {
+      host.append(el("div", { class: "empty" }, el("h3", {}, "白名單是空的"), el("p", {}, "目前沒有任何會話會收到推播。請先在 LINE 把 bot 加入群組並設定白名單。")));
+      return;
+    }
+    host.append(el("div", { class: "conv-list" }, ...conversations.map((c) =>
+      el("div", { class: "conv" },
+        el("span", { class: "badge dim" }, c.type || "會話"),
+        el("div", {}, el("div", { style: "font-weight:600" }, c.label || "(未命名)"), el("div", { class: "c-id" }, c.conversation_id)))
+    )));
+  } catch (e) { toast(e.message, "err"); }
+}
+
+/* ============================================================
+   Modals: 新增 / 修改 / 回填 / 刪除 / 確認
+   ============================================================ */
+function modal({ title, body, footer, onClose }) {
+  const dlg = el("dialog", {});
+  const close = (val) => { dlg.close(); };
+  dlg.addEventListener("close", () => { dlg.remove(); if (onClose) onClose(); });
+  dlg.append(
+    el("div", { class: "dlg-head" }, el("h2", {}, title), el("button", { class: "x", "aria-label": "關閉", onclick: () => close() }, "✕")),
+    el("div", { class: "dlg-body" }, body),
+    footer ? el("div", { class: "dlg-foot" }, footer) : null
+  );
+  document.body.append(dlg);
+  dlg.showModal();
+  return { dlg, close };
+}
+
+function confirmDialog(title, message, confirmLabel = "確定", danger = false) {
+  return new Promise((resolve) => {
+    let done = false;
+    const confirmBtn = el("button", { class: "btn " + (danger ? "btn--danger" : "btn--primary") }, confirmLabel);
+    const { dlg, close } = modal({
+      title,
+      body: el("p", { style: "color:var(--muted);font-size:0.92rem;line-height:1.6" }, message),
+      footer: [el("button", { class: "btn", onclick: () => close() }, "取消"), el("div", { class: "grow" }), confirmBtn],
+      onClose: () => { if (!done) resolve(false); },
+    });
+    confirmBtn.addEventListener("click", () => { done = true; resolve(true); close(); });
+  });
+}
+
+function openCampaignForm(mode, c = {}) {
+  const isEdit = mode === "edit";
+  const v = {
+    startDate: c.startDate || "", endDate: c.endDate || "", vendor: c.vendor || "", kol: c.kol || "",
+    category: c.category || "", linkSent: !!c.linkSent, status: c.status || "active",
+    revenue: c.revenue ?? "", commission: c.commission ?? "",
+  };
+  const fields = {};
+  const F = (key, label, attrs = {}, span) => {
+    const inp = el("input", { ...attrs, value: v[key] });
+    fields[key] = inp;
+    return el("div", { class: "field" + (span ? " span2" : "") }, el("label", {}, label), inp);
+  };
+
+  const catInput = el("input", { type: "text", list: "cat-list-modal", value: v.category, placeholder: "可留空" });
+  fields.category = catInput;
+  const linkCheck = el("input", { type: "checkbox" }); linkCheck.checked = v.linkSent;
+  const statusSel = el("select", {}, el("option", { value: "active" }, "進行中"), el("option", { value: "cancelled" }, "已取消")); statusSel.value = v.status;
+
+  const body = el("div", {},
+    el("div", { class: "form-grid" },
+      F("startDate", "開團日 *", { type: "date", required: true }),
+      F("endDate", "結束日", { type: "date" }),
+      F("vendor", "廠商 *", { type: "text", required: true, placeholder: "廠商名稱" }),
+      F("kol", "團主 *", { type: "text", required: true, placeholder: "團主名稱" }),
+      el("div", { class: "field" }, el("label", {}, "分類"), catInput),
+      el("div", { class: "field" }, el("label", {}, "狀態"), statusSel),
+      el("div", { class: "field span2" }, el("label", { class: "check" }, linkCheck, "已給連結(已完成事前作業)")),
+    ),
+    el("datalist", { id: "cat-list-modal" }, ...state.facets.categories.map((x) => el("option", { value: x.value }))),
+    isEdit ? null : el("p", { class: "hint", style: "margin-top:12px" }, "業績與分潤可在建立後用「回填」填入。"),
+    isEdit ? el("div", { class: "form-grid", style: "margin-top:14px" },
+      F("revenue", "業績", { type: "number", inputmode: "decimal", placeholder: "—" }),
+      F("commission", "分潤", { type: "number", inputmode: "decimal", placeholder: "—" })) : null,
+  );
+
+  const saveBtn = el("button", { class: "btn btn--primary" }, isEdit ? "儲存修改" : "建立開團");
+  const { close } = modal({ title: isEdit ? `修改開團 #${c.id}` : "新增開團", body, footer: [el("button", { class: "btn", onclick: () => close() }, "取消"), el("div", { class: "grow" }), saveBtn] });
+
+  saveBtn.addEventListener("click", async () => {
+    const payload = {
+      startDate: fields.startDate.value, endDate: fields.endDate.value || undefined,
+      vendor: fields.vendor.value.trim(), kol: fields.kol.value.trim(),
+      category: catInput.value.trim() || undefined,
+      linkSent: linkCheck.checked,
+    };
+    if (!payload.startDate) { toast("請填開團日", "err"); return; }
+    if (!payload.vendor) { toast("請填廠商", "err"); return; }
+    if (!payload.kol) { toast("請填團主", "err"); return; }
+    saveBtn.disabled = true; saveBtn.innerHTML = '<span class="spin"></span>儲存中';
+    try {
+      if (isEdit) {
+        payload.status = statusSel.value;
+        payload.revenue = fields.revenue.value === "" ? null : Number(fields.revenue.value);
+        payload.commission = fields.commission.value === "" ? null : Number(fields.commission.value);
+        await api("/campaigns/" + c.id, { method: "PATCH", body: JSON.stringify(payload) });
+        toast("已更新開團", "ok");
+      } else {
+        await api("/campaigns", { method: "POST", body: JSON.stringify(payload) });
+        toast("已新增開團", "ok");
+      }
+      close();
+      afterMutate();
+    } catch (e) { toast(e.message, "err"); saveBtn.disabled = false; saveBtn.textContent = isEdit ? "儲存修改" : "建立開團"; }
+  });
+}
+
+function openBackfill(c) {
+  const rev = el("input", { type: "number", inputmode: "decimal", value: c.revenue ?? "", placeholder: "未填" });
+  const com = el("input", { type: "number", inputmode: "decimal", value: c.commission ?? "", placeholder: "未填" });
+  const saveBtn = el("button", { class: "btn btn--primary" }, "儲存");
+  const { close } = modal({
+    title: "回填業績 · #" + c.id,
+    body: el("div", {},
+      el("p", { style: "color:var(--muted);font-size:0.88rem;margin-bottom:16px" }, `${esc(c.vendor)} / ${esc(c.kol)} · ${c.startDate}`),
+      el("div", { class: "form-grid" },
+        el("div", { class: "field" }, el("label", {}, "業績"), rev),
+        el("div", { class: "field" }, el("label", {}, "分潤"), com)),
+      el("p", { class: "hint", style: "margin-top:12px" }, "留空的欄位會保留原值。")),
+    footer: [el("button", { class: "btn", onclick: () => close() }, "取消"), el("div", { class: "grow" }), saveBtn],
+  });
+  saveBtn.addEventListener("click", async () => {
+    saveBtn.disabled = true; saveBtn.innerHTML = '<span class="spin"></span>儲存中';
+    try {
+      await api("/campaigns/" + c.id + "/backfill", { method: "POST", body: JSON.stringify({ revenue: rev.value, commission: com.value }) });
+      toast("已回填業績", "ok"); close(); afterMutate();
+    } catch (e) { toast(e.message, "err"); saveBtn.disabled = false; saveBtn.textContent = "儲存"; }
+  });
+}
+
+async function confirmDelete(c) {
+  const ok = await confirmDialog("刪除開團", `確定要刪除「${c.vendor} / ${c.kol}(${c.startDate})」嗎?此動作會永久移除這筆資料(仍會留異動紀錄),無法復原。`, "刪除", true);
+  if (!ok) return;
+  try { await api("/campaigns/" + c.id, { method: "DELETE" }); toast("已刪除開團", "ok"); afterMutate(); }
+  catch (e) { toast(e.message, "err"); }
+}
+
+/* after any create/edit/delete/backfill: refresh list + facets quietly */
+function afterMutate() {
+  if (state.view === "list") loadList();
+  loadFacets();
+}
+
+/* ============================================================
+   Boot
+   ============================================================ */
+async function loadFacets() {
+  try { state.facets = await api("/facets"); } catch { /* non-fatal */ }
+}
+
+async function boot() {
+  renderShell();
+  $("#topbar") && setTopbar("載入中…", "");
+  await loadFacets();
+  renderView();
+}
+
+if (state.token) boot(); else renderLogin();
+</script>
+</body>
+</html>

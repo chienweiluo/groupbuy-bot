@@ -1,0 +1,11 @@
+{
+  "tenantId": "default",
+  "files": [
+    {
+      "path": "/Users/luochienwei/Documents/Abby排程表2026.csv",
+      "category": "2026排程",
+      "startRow": 4,
+      "cols": { "period": 1, "vendor": 2, "kol": 3, "check": 5, "revenue": 6, "commission": 4 }
+    }
+  ]
+}

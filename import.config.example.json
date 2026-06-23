@@ -1,0 +1,18 @@
+{
+  "tenantId": "default",
+  "files": [
+    {
+      "path": "./csv/sheet1.csv",
+      "category": "預設分類",
+      "startRow": 2,
+      "cols": {
+        "period": 0,
+        "vendor": 1,
+        "kol": 2,
+        "check": 3,
+        "revenue": 4,
+        "commission": 5
+      }
+    }
+  ]
+}

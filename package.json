@@ -1,0 +1,26 @@
+{
+  "name": "groupbuy-bot",
+  "version": "1.0.0",
+  "description": "LINE 團購開團提醒/管理 bot — DB 為核心,每日提醒 + OK 打勾 + 增改刪 + 業績回填 + 月結",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "import": "node src/importSheet.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "ISC",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.102.0",
+    "@line/bot-sdk": "^11.0.1",
+    "better-sqlite3": "^12.10.0",
+    "dayjs": "^1.11.13",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "node-cron": "^4.2.1"
+  }
+}

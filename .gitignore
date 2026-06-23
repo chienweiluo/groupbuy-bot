@@ -1,0 +1,12 @@
+node_modules/
+data/
+.env
+*.log
+.DS_Store
+
+# 開發工具 / AI harness 的本機設定(含絕對路徑,不入版控)
+.claude/
+.codex/
+.cursor/
+.agents/
+.impeccable/
