@@ -370,11 +370,31 @@
 "use strict";
 
 const TOKEN_KEY = "gb_admin_token";
+
+/* 進入頁面的預設篩選:本月 + 未給連結 + 進行中(月份用本地時間計算,避免 UTC 跨月誤差) */
+function defaultListFilters() {
+  const n = new Date();
+  const p = (x) => String(x).padStart(2, "0");
+  const iso = (d) => `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  return {
+    q: "",
+    from: iso(new Date(n.getFullYear(), n.getMonth(), 1)),
+    to: iso(new Date(n.getFullYear(), n.getMonth() + 1, 0)),
+    kol: "", vendor: "", category: "",
+    status: "active", linkSent: "0",
+    sort: "start_date", order: "desc",
+  };
+}
+/* 「清除條件」用:全部清空,顯示所有資料 */
+function emptyListFilters() {
+  return { q: "", from: "", to: "", kol: "", vendor: "", category: "", status: "", linkSent: "", sort: "start_date", order: "desc" };
+}
+
 const state = {
   token: localStorage.getItem(TOKEN_KEY) || "",
   view: "list",
   facets: { categories: [], kols: [], vendors: [] },
-  filters: { q: "", from: "", to: "", kol: "", vendor: "", category: "", status: "", linkSent: "", sort: "start_date", order: "desc" },
+  filters: defaultListFilters(),
   page: 1, pageSize: 50,
   list: null, loading: false,
   summary: null, summaryRange: "all", summaryStatus: "active", summaryTab: "byKol",
@@ -581,7 +601,7 @@ function renderList() {
     el("datalist", { id: "vendor-list" }, ...state.facets.vendors.slice(0, 60).map((x) => el("option", { value: x.value }))),
   );
 
-  const resetBtn = el("button", { class: "btn btn--ghost btn--sm", onclick: () => { state.filters = { q: "", from: "", to: "", kol: "", vendor: "", category: "", status: "", linkSent: "", sort: "start_date", order: "desc" }; state.page = 1; renderList(); loadList(); } }, "清除條件");
+  const resetBtn = el("button", { class: "btn btn--ghost btn--sm", onclick: () => { state.filters = emptyListFilters(); state.page = 1; renderList(); loadList(); } }, "清除條件");
 
   c.append(
     el("section", { class: "panel" },
