@@ -271,8 +271,49 @@
   }
 
   /* ============================ Pagination ============================ */
-  .pager { display: flex; align-items: center; justify-content: center; gap: 14px; margin-top: 18px; }
+  .pager { display: flex; align-items: center; justify-content: center; gap: 14px; margin: 18px 0; }
   .pager .info { font-size: 0.84rem; color: var(--muted); font-weight: 600; }
+
+  /* ============================ Collapsible filter ============================ */
+  .filter-head { display: flex; align-items: center; gap: 11px; padding: 15px 18px; cursor: pointer; user-select: none; }
+  .filter-head .fh-title { font-weight: 700; font-size: 0.95rem; display: inline-flex; align-items: center; gap: 8px; flex: none; }
+  .filter-head .fh-title svg { width: 17px; height: 17px; color: var(--muted); }
+  .filter-head .fh-summary { color: var(--muted); font-size: 0.82rem; font-weight: 500; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .filter-head .chev { color: var(--faint); display: inline-flex; transition: transform var(--base) var(--ease); }
+  .filter-head .chev svg { width: 18px; height: 18px; }
+  .panel.collapsed .filter-head .chev { transform: rotate(-90deg); }
+  .filter-collapse { display: grid; grid-template-rows: 1fr; transition: grid-template-rows var(--base) var(--ease); }
+  .panel.collapsed .filter-collapse { grid-template-rows: 0fr; }
+  .filter-collapse > .fc-inner { overflow: hidden; min-height: 0; }
+  .filter-body { padding: 2px 18px 18px; }
+  .chips { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 12px; }
+  .chip { padding: 6px 12px; border-radius: var(--r-pill); border: 1px solid var(--border); background: var(--surface); font-size: 0.8rem; font-weight: 600; color: var(--muted); transition: background var(--fast), color var(--fast), border-color var(--fast); }
+  .chip:hover { background: var(--surface-2); color: var(--ink); }
+  .chip.active { background: var(--brand-soft); border-color: var(--brand-soft-2); color: var(--brand-strong); }
+
+  /* ============================ List toolbar + browse rows ============================ */
+  .list-toolbar { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--border-soft); flex-wrap: wrap; }
+  .list-toolbar .grow { flex: 1; }
+  .sort-sel { width: auto; min-width: 132px; min-height: 36px; padding: 6px 30px 6px 11px; font-size: 0.82rem; }
+  .clist { display: flex; flex-direction: column; }
+  .crow { display: flex; align-items: center; gap: 10px; padding: 8px 16px; border-bottom: 1px solid var(--border-soft); cursor: pointer; transition: background var(--fast); }
+  .crow:hover { background: var(--surface-2); }
+  .crow:active { background: var(--surface-3); }
+  .crow .c-date { width: 92px; flex: none; font-variant-numeric: tabular-nums; color: var(--muted); font-size: 0.82rem; }
+  .crow .c-vk { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 0.9rem; }
+  .crow .c-vk b { font-weight: 650; }
+  .crow .c-vk .sep { color: var(--faint); margin: 0 5px; }
+  .crow .c-vk .kol { color: var(--muted); }
+  .crow .c-com { flex: none; font-variant-numeric: tabular-nums; font-weight: 650; font-size: 0.86rem; min-width: 56px; text-align: right; }
+  .crow .c-link { flex: none; }
+  .crow.cancelled .c-vk { text-decoration: line-through; opacity: 0.55; }
+  .badge.mini { padding: 2px 7px; font-size: 0.7rem; }
+  @media (max-width: 760px) {
+    .crow { gap: 8px; padding: 8px 14px; }
+    .crow .c-date { width: 76px; font-size: 0.75rem; }
+    .crow .c-vk { font-size: 0.85rem; }
+    .crow .c-com { min-width: 46px; font-size: 0.8rem; }
+  }
 
   /* ============================ Summary ============================ */
   .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
@@ -374,15 +415,26 @@
 
 const TOKEN_KEY = "gb_admin_token";
 
-/* 進入頁面的預設篩選:本月 + 未給連結 + 進行中(月份用本地時間計算,避免 UTC 跨月誤差) */
-function defaultListFilters() {
+/* 本地時間計算「當月 +offset 月」的起訖 'YYYY-MM-DD'(避免 UTC 跨月誤差) */
+function monthBounds(offset = 0) {
   const n = new Date();
   const p = (x) => String(x).padStart(2, "0");
   const iso = (d) => `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
   return {
-    q: "",
-    from: iso(new Date(n.getFullYear(), n.getMonth(), 1)),
-    to: iso(new Date(n.getFullYear(), n.getMonth() + 1, 0)),
+    from: iso(new Date(n.getFullYear(), n.getMonth() + offset, 1)),
+    to: iso(new Date(n.getFullYear(), n.getMonth() + offset + 1, 0)),
+  };
+}
+function thisYearBounds() {
+  const y = new Date().getFullYear();
+  return { from: `${y}-01-01`, to: `${y}-12-31` };
+}
+
+/* 進入頁面的預設篩選:本月 + 未給連結 + 進行中 */
+function defaultListFilters() {
+  const m = monthBounds(0);
+  return {
+    q: "", from: m.from, to: m.to,
     kol: "", vendor: "", category: "",
     status: "active", linkSent: "0",
     sort: "start_date", order: "desc",
@@ -400,6 +452,8 @@ const state = {
   filters: defaultListFilters(),
   page: 1, pageSize: 50,
   list: null, loading: false,
+  listMode: localStorage.getItem("gb_list_mode") || "browse", // browse(瀏覽) | edit(編輯)
+  filtersCollapsed: localStorage.getItem("gb_filters_collapsed") === "1",
   summary: null, summaryRange: "all", summaryStatus: "active", summaryTab: "byKol",
   allowlist: null,
 };
@@ -456,6 +510,8 @@ const I = {
   search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
   inbox: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="28" height="28"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>',
   send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>',
+  filter: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>',
+  chevron: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>',
 };
 
 /* ============================================================
@@ -590,38 +646,131 @@ function renderList() {
     return s;
   };
 
+  // 日期 input 留參考,讓快捷月份按鈕能同步更新欄位
+  const fromInput = mkInput("from", { type: "date" });
+  const toInput = mkInput("to", { type: "date" });
+
+  const applyDates = (from, to) => {
+    f.from = from; f.to = to;
+    fromInput.value = from; toInput.value = to;
+    state.page = 1; loadList(); syncChips();
+  };
+  const monthChips = [
+    el("button", { class: "chip", onclick: () => { const b = monthBounds(-1); applyDates(b.from, b.to); } }, "上月"),
+    el("button", { class: "chip", onclick: () => { const b = monthBounds(0); applyDates(b.from, b.to); } }, "本月"),
+    el("button", { class: "chip", onclick: () => { const b = monthBounds(1); applyDates(b.from, b.to); } }, "下月"),
+    el("button", { class: "chip", onclick: () => { const b = thisYearBounds(); applyDates(b.from, b.to); } }, "今年"),
+    el("button", { class: "chip", onclick: () => applyDates("", "") }, "清除日期"),
+  ];
+  function syncChips() {
+    const eq = (b) => f.from === b.from && f.to === b.to;
+    monthChips[0].classList.toggle("active", eq(monthBounds(-1)));
+    monthChips[1].classList.toggle("active", eq(monthBounds(0)));
+    monthChips[2].classList.toggle("active", eq(monthBounds(1)));
+    monthChips[3].classList.toggle("active", eq(thisYearBounds()));
+  }
+  syncChips();
+
   const filters = el("div", { class: "filters" },
     el("div", { class: "field wide" }, el("label", {}, "搜尋(廠商 / 團主)"), mkInput("q", { type: "text", placeholder: "輸入廠商或團主關鍵字…", inputmode: "search" })),
-    el("div", { class: "field" }, el("label", {}, "開團日起"), mkInput("from", { type: "date" })),
-    el("div", { class: "field" }, el("label", {}, "開團日迄"), mkInput("to", { type: "date" })),
+    el("div", { class: "field" }, el("label", {}, "開團日起"), fromInput),
+    el("div", { class: "field" }, el("label", {}, "開團日迄"), toInput),
     el("div", { class: "field" }, el("label", {}, "團主"), mkInput("kol", { type: "text", placeholder: "團主名稱", list: "kol-list" })),
     el("div", { class: "field" }, el("label", {}, "廠商"), mkInput("vendor", { type: "text", placeholder: "廠商名稱", list: "vendor-list" })),
     el("div", { class: "field" }, el("label", {}, "分類"), mkSelect("category", catOpts)),
     el("div", { class: "field" }, el("label", {}, "狀態"), mkSelect("status", [el("option", { value: "" }, "全部狀態"), el("option", { value: "active" }, "進行中"), el("option", { value: "cancelled" }, "已取消")])),
     el("div", { class: "field" }, el("label", {}, "連結"), mkSelect("linkSent", [el("option", { value: "" }, "不限"), el("option", { value: "1" }, "已給連結"), el("option", { value: "0" }, "未給連結")])),
-    // datalists for autocomplete
     el("datalist", { id: "kol-list" }, ...state.facets.kols.slice(0, 60).map((x) => el("option", { value: x.value }))),
     el("datalist", { id: "vendor-list" }, ...state.facets.vendors.slice(0, 60).map((x) => el("option", { value: x.value }))),
   );
 
   const resetBtn = el("button", { class: "btn btn--ghost btn--sm", onclick: () => { state.filters = emptyListFilters(); state.page = 1; renderList(); loadList(); } }, "清除條件");
 
-  c.append(
-    el("section", { class: "panel" },
-      el("div", { class: "panel-body" },
-        filters,
-        el("div", { class: "filter-foot" },
-          el("span", { id: "result-count", class: "result-count" }, "載入中…"),
-          el("div", { class: "grow" }),
-          resetBtn
-        )
-      )
+  // 可收合的篩選面板
+  const filterPanel = el("section", { class: "panel" + (state.filtersCollapsed ? " collapsed" : "") },
+    el("div", { class: "filter-head",
+      onclick: () => {
+        const nowCollapsed = !filterPanel.classList.contains("collapsed");
+        filterPanel.classList.toggle("collapsed", nowCollapsed);
+        state.filtersCollapsed = nowCollapsed;
+        localStorage.setItem("gb_filters_collapsed", nowCollapsed ? "1" : "");
+        updateFilterSummary();
+      } },
+      el("span", { class: "fh-title", html: I.filter + "<span>篩選</span>" }),
+      el("span", { id: "filter-summary", class: "fh-summary" }, ""),
+      el("span", { class: "chev", html: I.chevron }),
     ),
-    el("section", { id: "list-panel", class: "panel", style: "margin-top:18px" }, el("div", { id: "list-body" }, skeletonTable()))
+    el("div", { class: "filter-collapse" }, el("div", { class: "fc-inner" },
+      el("div", { class: "filter-body" },
+        filters,
+        el("div", { class: "chips" }, ...monthChips),
+        el("div", { class: "filter-foot" }, el("div", { class: "grow" }), resetBtn),
+      )
+    )),
   );
 
+  // 模式切換 + 排序工具列
+  const modeSeg = el("div", { class: "seg" },
+    el("button", { class: state.listMode === "browse" ? "active" : "", onclick: () => setListMode("browse") }, "瀏覽"),
+    el("button", { class: state.listMode === "edit" ? "active" : "", onclick: () => setListMode("edit") }, "編輯"),
+  );
+  const sortSel = el("select", { class: "sort-sel", title: "排序" },
+    el("option", { value: "start_date|desc" }, "開團日 新→舊"),
+    el("option", { value: "start_date|asc" }, "開團日 舊→新"),
+    el("option", { value: "commission|desc" }, "分潤 高→低"),
+    el("option", { value: "updated_at|desc" }, "最近更新"),
+  );
+  sortSel.value = `${f.sort}|${f.order}`;
+  sortSel.addEventListener("change", (e) => { const [s, o] = e.target.value.split("|"); f.sort = s; f.order = o; loadList(); });
+
+  c.append(
+    filterPanel,
+    el("section", { id: "list-panel", class: "panel", style: "margin-top:18px" },
+      el("div", { class: "list-toolbar" },
+        el("span", { id: "result-count", class: "result-count" }, "載入中…"),
+        el("div", { class: "grow" }),
+        sortSel,
+        modeSeg,
+      ),
+      el("div", { id: "list-body" }, skeletonTable()),
+    ),
+  );
+
+  updateFilterSummary();
   if (!state.list) loadList();
   else paintList();
+}
+
+function setListMode(m) {
+  state.listMode = m;
+  localStorage.setItem("gb_list_mode", m);
+  renderList();
+}
+
+/* 收合時在標題列顯示目前套用的條件摘要 */
+function filterSummaryText() {
+  const f = state.filters;
+  const parts = [];
+  if (f.q) parts.push(`「${f.q}」`);
+  if (f.from || f.to) {
+    const eq = (b) => f.from === b.from && f.to === b.to;
+    if (eq(monthBounds(0))) parts.push("本月");
+    else if (eq(monthBounds(-1))) parts.push("上月");
+    else if (eq(monthBounds(1))) parts.push("下月");
+    else if (eq(thisYearBounds())) parts.push("今年");
+    else parts.push(`${f.from || "…"}~${f.to || "…"}`);
+  }
+  if (f.kol) parts.push("團主:" + f.kol);
+  if (f.vendor) parts.push("廠商:" + f.vendor);
+  if (f.category) parts.push(f.category === "__none__" ? "未分類" : f.category);
+  if (f.status) parts.push(f.status === "active" ? "進行中" : "已取消");
+  if (f.linkSent === "1") parts.push("已給連結");
+  else if (f.linkSent === "0") parts.push("未給連結");
+  return parts.length ? parts.join(" · ") : "無條件 · 全部";
+}
+function updateFilterSummary() {
+  const s = $("#filter-summary");
+  if (s) s.textContent = state.filtersCollapsed ? filterSummaryText() : "";
 }
 
 function skeletonTable() {
@@ -650,6 +799,12 @@ function statusBadge(c) {
 function linkBadge(c) {
   return c.linkSent ? el("span", { class: "badge ok" }, "已給連結") : el("span", { class: "badge warn" }, "未給連結");
 }
+/* 緊湊檔期:6/29–7/5(去掉年份;同日或無結束則只顯示開團日) */
+function mdRange(c) {
+  const md = (s) => (s ? `${Number(s.slice(5, 7))}/${Number(s.slice(8, 10))}` : "");
+  const a = md(c.startDate), b = md(c.endDate);
+  return b && b !== a ? `${a}–${b}` : a;
+}
 
 const COLS = [
   { key: "start_date", label: "檔期", sortable: true },
@@ -668,6 +823,7 @@ function paintList() {
   const { rows, total, page, pageSize } = state.list;
   const cnt = $("#result-count");
   if (cnt) cnt.textContent = `共 ${fmtNum(total)} 筆` + (total > pageSize ? ` · 第 ${page} 頁` : "");
+  updateFilterSummary();
 
   if (!rows.length) {
     body.append(el("div", { class: "empty" },
@@ -677,6 +833,25 @@ function paintList() {
     return;
   }
 
+  if (state.listMode === "browse") paintBrowse(body, rows);
+  else paintEditTable(body, rows);
+  appendPager(body, total, page, pageSize);
+}
+
+/* 瀏覽模式:精簡單行(檔期 / 廠商·團主 / 分潤 / 連結),低行高、單屏看最多 */
+function paintBrowse(body, rows) {
+  body.append(el("div", { class: "clist" }, ...rows.map((c) =>
+    el("div", { class: "crow" + (c.status === "cancelled" ? " cancelled" : ""), title: "點一下編輯", onclick: () => openCampaignForm("edit", c) },
+      el("span", { class: "c-date" }, mdRange(c)),
+      el("span", { class: "c-vk" }, el("b", {}, c.vendor), el("span", { class: "sep" }, "·"), el("span", { class: "kol" }, c.kol)),
+      el("span", { class: "c-com" }, c.commission != null ? fmtMoney(c.commission) : "—"),
+      c.linkSent ? el("span", { class: "badge ok mini c-link" }, "已") : el("span", { class: "badge warn mini c-link" }, "未"),
+    )
+  )));
+}
+
+/* 編輯模式:完整表格 + 操作按鈕 */
+function paintEditTable(body, rows) {
   const f = state.filters;
   const thead = el("thead", {}, el("tr", {}, ...COLS.map((col) => {
     if (!col.sortable) return el("th", { class: "no-sort" }, col.label);
@@ -701,16 +876,16 @@ function paintList() {
   )));
 
   body.append(el("div", { class: "table-wrap" }, el("table", { class: "grid" }, thead, tbody)));
+}
 
-  // pager
+function appendPager(body, total, page, pageSize) {
   const pages = Math.max(1, Math.ceil(total / pageSize));
-  if (pages > 1) {
-    body.append(el("div", { class: "pager" },
-      el("button", { class: "btn btn--sm", disabled: page <= 1, onclick: () => { state.page--; loadList(); } }, "← 上一頁"),
-      el("span", { class: "info" }, `第 ${page} / ${pages} 頁`),
-      el("button", { class: "btn btn--sm", disabled: page >= pages, onclick: () => { state.page++; loadList(); } }, "下一頁 →"),
-    ));
-  }
+  if (pages <= 1) return;
+  body.append(el("div", { class: "pager" },
+    el("button", { class: "btn btn--sm", disabled: page <= 1, onclick: () => { state.page--; loadList(); } }, "← 上一頁"),
+    el("span", { class: "info" }, `第 ${page} / ${pages} 頁`),
+    el("button", { class: "btn btn--sm", disabled: page >= pages, onclick: () => { state.page++; loadList(); } }, "下一頁 →"),
+  ));
 }
 
 /* ============================================================
