@@ -310,20 +310,23 @@
     border: none; padding: 0; border-radius: var(--r-lg); box-shadow: var(--shadow-lg);
     background: var(--surface); color: var(--ink); max-width: min(540px, calc(100vw - 28px)); width: 100%;
     max-height: calc(100dvh - 40px);
-    margin: auto; /* restore native centering (the * reset zeroes it) */
-    display: flex; flex-direction: column;
+    margin: auto; /* native centering (the * reset zeroes it) */
+    /* dialog 整體捲動 + sticky 頭尾;避免 flex 子項在 iOS Safari 內容歸零塌陷 */
+    overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
   }
   dialog::backdrop { background: oklch(0.2 0.02 48 / 0.5); backdrop-filter: blur(3px); }
   dialog[open] { animation: dlg-in var(--base) var(--ease); }
   dialog[open]::backdrop { animation: fade-in var(--base) var(--ease); }
   @keyframes dlg-in { from { opacity: 0; transform: translateY(14px) scale(0.97); } }
   @keyframes fade-in { from { opacity: 0; } }
-  .dlg-head { display: flex; align-items: flex-start; gap: 12px; padding: 20px 22px 0; }
+  .dlg-head { display: flex; align-items: flex-start; gap: 12px; padding: 18px 22px 12px;
+    position: sticky; top: 0; z-index: 1; background: var(--surface); }
   .dlg-head h2 { font-size: 1.16rem; flex: 1; }
-  .dlg-head .x { width: 34px; height: 34px; border-radius: var(--r-sm); border: none; background: var(--surface-2); color: var(--muted); display: grid; place-items: center; font-size: 18px; }
+  .dlg-head .x { width: 34px; height: 34px; flex: none; border-radius: var(--r-sm); border: none; background: var(--surface-2); color: var(--muted); display: grid; place-items: center; font-size: 18px; }
   .dlg-head .x:hover { background: var(--surface-3); color: var(--ink); }
-  .dlg-body { padding: 18px 22px; overflow-y: auto; flex: 1; min-height: 0; }
-  .dlg-foot { display: flex; gap: 10px; padding: 16px 22px 20px; border-top: 1px solid var(--border-soft); }
+  .dlg-body { padding: 2px 22px 18px; }
+  .dlg-foot { display: flex; gap: 10px; padding: 14px 22px calc(18px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border-soft);
+    position: sticky; bottom: 0; background: var(--surface); }
   .dlg-foot .grow { flex: 1; }
   .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   .form-grid .span2 { grid-column: 1 / -1; }
