@@ -15,6 +15,7 @@ import {
   getCampaign,
   getCampaignHistory,
   createCampaign,
+  createCampaignsBulk,
   updateCampaign,
   backfillRevenue,
   deleteCampaign,
@@ -92,6 +93,15 @@ export function createAdminRouter() {
     const r = createCampaign({ ...req.body }, ACTOR);
     if (!r.ok) return res.status(400).json({ error: r.error });
     res.status(201).json({ campaign: r.campaign });
+  });
+
+  // ---- 批次新增開團 ----
+  router.post("/admin/api/campaigns/bulk", json, (req, res) => {
+    const items = Array.isArray(req.body?.items) ? req.body.items : null;
+    if (!items || !items.length) return res.status(400).json({ error: "沒有要新增的資料" });
+    if (items.length > 300) return res.status(400).json({ error: "一次最多 300 筆" });
+    const r = createCampaignsBulk(items, ACTOR);
+    res.status(r.created ? 201 : 400).json(r);
   });
 
   // ---- 修改開團(部分欄位)----

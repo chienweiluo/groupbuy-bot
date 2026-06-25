@@ -315,6 +315,30 @@
     .crow .c-com { min-width: 46px; font-size: 0.8rem; }
   }
 
+  /* ============================ Bulk add ============================ */
+  dialog.dlg-wide { max-width: min(820px, calc(100vw - 20px)); }
+  .bulk-shared { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 11px; padding: 13px; background: var(--surface-2); border: 1px solid var(--border-soft); border-radius: var(--r-sm); }
+  .bulk-shared .field > label { font-size: 0.76rem; }
+  .bulk-note { font-size: 0.78rem; color: var(--faint); margin: 10px 2px 6px; }
+  details.bulk-paste { margin: 12px 0; border: 1px solid var(--border-soft); border-radius: var(--r-sm); overflow: hidden; }
+  details.bulk-paste > summary { padding: 11px 14px; cursor: pointer; font-weight: 600; font-size: 0.86rem; background: var(--surface-2); user-select: none; list-style: none; display: flex; align-items: center; gap: 8px; }
+  details.bulk-paste > summary::-webkit-details-marker { display: none; }
+  details.bulk-paste > summary::before { content: "▸"; color: var(--faint); transition: transform var(--fast); }
+  details.bulk-paste[open] > summary::before { transform: rotate(90deg); }
+  details.bulk-paste .bp-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+  details.bulk-paste textarea { min-height: 92px; font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.82rem; }
+  .bulk-rows { display: flex; flex-direction: column; gap: 8px; }
+  .brow { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; padding: 10px; border: 1px solid var(--border-soft); border-radius: var(--r-sm); background: var(--surface); }
+  .brow--err { border-color: color-mix(in oklab, var(--danger) 55%, var(--border)); background: var(--danger-soft); }
+  .brow .bcell { display: flex; flex-direction: column; gap: 3px; flex: 1 1 128px; min-width: 0; }
+  .brow .bcell label { font-size: 0.7rem; color: var(--faint); font-weight: 600; }
+  .brow .bcell-date { flex: 0 1 142px; }
+  .brow input { min-height: 38px; }
+  .brow .bcell-link { flex: 0 0 auto; align-self: center; margin-bottom: 2px; }
+  .brow .brow-rm { flex: 0 0 auto; width: 34px; min-height: 38px; padding: 0; align-self: flex-end; color: var(--danger); border-color: color-mix(in oklab, var(--danger) 30%, var(--border)); }
+  .brow .brerr-msg { flex: 1 0 100%; font-size: 0.74rem; color: var(--danger); font-weight: 600; }
+  .bulk-toolbar { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+
   /* ============================ Summary ============================ */
   .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
   .kpi { background: var(--surface); border: 1px solid var(--border-soft); border-radius: var(--r-md); padding: 16px 18px; box-shadow: var(--shadow-sm); }
@@ -512,6 +536,7 @@ const I = {
   send: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>',
   filter: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>',
   chevron: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>',
+  layers: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>',
 };
 
 /* ============================================================
@@ -626,6 +651,7 @@ function renderView() {
    ============================================================ */
 function renderList() {
   setTopbar("開團列表", "多維度搜尋 · 增改刪 · 回填",
+    el("button", { class: "btn", onclick: () => openBulkForm(), html: I.layers + "<span>批次新增</span>" }),
     el("button", { class: "btn btn--primary", onclick: () => openCampaignForm("create"), html: I.plus + "<span>新增開團</span>" })
   );
   const c = $("#content");
@@ -1091,8 +1117,8 @@ async function loadAllowlist() {
 /* ============================================================
    Modals: 新增 / 修改 / 回填 / 刪除 / 確認
    ============================================================ */
-function modal({ title, body, footer, onClose }) {
-  const dlg = el("dialog", {});
+function modal({ title, body, footer, onClose, wide }) {
+  const dlg = el("dialog", { class: wide ? "dlg-wide" : "" });
   const close = (val) => { dlg.close(); };
   dlg.addEventListener("close", () => { dlg.remove(); if (onClose) onClose(); });
   dlg.append(
@@ -1184,6 +1210,173 @@ function openCampaignForm(mode, c = {}) {
       close();
       afterMutate();
     } catch (e) { toast(e.message, "err"); saveBtn.disabled = false; saveBtn.textContent = isEdit ? "儲存修改" : "建立開團"; }
+  });
+}
+
+/* ---- 批次新增開團 ---- */
+const _pad2 = (n) => String(n).padStart(2, "0");
+function bulkToIso(tok) {
+  if (!tok) return "";
+  const t = String(tok).trim();
+  let m = t.match(/^(\d{4})[-/.](\d{1,2})[-/.](\d{1,2})$/);
+  if (m) return `${m[1]}-${_pad2(m[2])}-${_pad2(m[3])}`;
+  m = t.match(/^(\d{1,2})[-/.](\d{1,2})$/); // 無年份的 M/D → 補年(月份已過則明年)
+  if (m) {
+    const now = new Date(), curM = now.getMonth() + 1;
+    const mo = +m[1], d = +m[2];
+    const y = mo < curM ? now.getFullYear() + 1 : now.getFullYear();
+    return `${y}-${_pad2(mo)}-${_pad2(d)}`;
+  }
+  return "";
+}
+/** 解析貼上的多行文字 → [{startDate,endDate,vendor,kol}]。支援逗號/Tab 欄位或「日期區間 廠商 團主」。 */
+function parseBulk(text) {
+  const dateRe = /(\d{4}[-/.]\d{1,2}[-/.]\d{1,2}|\d{1,2}[-/.]\d{1,2})/;
+  const splitRange = (tok) => {
+    const s = String(tok).replace(/到|～|~/g, "-").trim();
+    const isos = s.match(/\d{4}[-/.]\d{1,2}[-/.]\d{1,2}/g);
+    if (isos) return [isos[0], isos[1] || ""];
+    const parts = s.split("-").map((x) => x.trim()).filter(Boolean);
+    return [parts[0] || "", parts[1] || ""];
+  };
+  const out = [];
+  for (const raw of text.split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line) continue;
+    let start = "", end = "", vendor = "", kol = "";
+    if (line.includes(",") || line.includes("\t")) {
+      // 欄位式:開團日, [結束日,] 廠商, 團主
+      const cols = line.split(/[,\t]/).map((x) => x.trim()).filter(Boolean);
+      const secondIsDate = cols[1] && dateRe.test(cols[1]) && bulkToIso(cols[1].replace(/到|～|~/g, "-"));
+      if (secondIsDate) { [start, end] = splitRange(cols[0]); end = end || bulkToIso(cols[1]); vendor = cols[2] || ""; kol = cols[3] || ""; }
+      else { [start, end] = splitRange(cols[0]); vendor = cols[1] || ""; kol = cols[2] || ""; }
+    } else {
+      // 空白式:找出含日期的 token 當區間,其餘依序當 廠商 / 團主
+      const toks = line.split(/\s+/);
+      const di = toks.findIndex((t) => dateRe.test(t));
+      if (di >= 0) { [start, end] = splitRange(toks[di]); }
+      const rest = toks.filter((_, i) => i !== di);
+      vendor = rest[0] || "";
+      kol = rest.slice(1).join(" ") || "";
+    }
+    const startDate = bulkToIso(start);
+    if (!startDate && !vendor && !kol) continue;
+    out.push({ startDate, endDate: bulkToIso(end), vendor, kol });
+  }
+  return out;
+}
+
+function openBulkForm() {
+  const defaultCat = state.facets.defaultCategory || "";
+  const rowsWrap = el("div", { class: "bulk-rows" });
+  const rowModels = [];
+
+  const sharedKol = el("input", { type: "text", placeholder: "團主", list: "kol-list-bulk" });
+  const sharedVendor = el("input", { type: "text", placeholder: "廠商", list: "vendor-list-bulk" });
+  const sharedCat = el("input", { type: "text", value: defaultCat, placeholder: "分類", list: "cat-list-bulk" });
+
+  const countEl = el("span", { class: "result-count" });
+  const updateCount = () => { countEl.textContent = `${rowModels.length} 列`; };
+
+  function addRow(data = {}) {
+    const start = el("input", { type: "date", value: data.startDate || "" });
+    const end = el("input", { type: "date", value: data.endDate || "" });
+    const vendor = el("input", { type: "text", placeholder: "廠商(留空用共用)", value: data.vendor || "", list: "vendor-list-bulk" });
+    const kol = el("input", { type: "text", placeholder: "團主(留空用共用)", value: data.kol || "", list: "kol-list-bulk" });
+    const link = el("input", { type: "checkbox" }); link.checked = !!data.linkSent;
+    const model = { start, end, vendor, kol, link, row: null };
+    const rm = el("button", { class: "btn brow-rm", title: "移除此列", onclick: () => {
+      const i = rowModels.indexOf(model); if (i >= 0) rowModels.splice(i, 1);
+      model.row.remove(); updateCount();
+    } }, "✕");
+    const row = el("div", { class: "brow" },
+      el("div", { class: "bcell bcell-date" }, el("label", {}, "開團日 *"), start),
+      el("div", { class: "bcell bcell-date" }, el("label", {}, "結束日"), end),
+      el("div", { class: "bcell" }, el("label", {}, "廠商"), vendor),
+      el("div", { class: "bcell" }, el("label", {}, "團主"), kol),
+      el("label", { class: "bcell-link check" }, link, "連結"),
+      rm,
+    );
+    model.row = row;
+    rowModels.push(model);
+    rowsWrap.append(row);
+    updateCount();
+    return model;
+  }
+
+  const pasteTa = el("textarea", { placeholder: "每行一團,例如:\n6/29-7/6 久賴 roro兔兔\n7/27-8/4 久賴 roro兔兔\n或逗號分隔:7/1, 7/10, 寶寶米餅, 林建" });
+  const pasteBtn = el("button", { class: "btn btn--sm btn--primary", onclick: () => {
+    const parsed = parseBulk(pasteTa.value);
+    if (!parsed.length) { toast("沒有解析到資料,確認格式", "err"); return; }
+    // 清掉開頭的空白列再附加解析結果
+    for (const m of [...rowModels]) {
+      if (!m.start.value && !m.vendor.value && !m.kol.value) { const i = rowModels.indexOf(m); rowModels.splice(i, 1); m.row.remove(); }
+    }
+    parsed.forEach((p) => addRow(p));
+    pasteTa.value = "";
+    toast(`解析出 ${parsed.length} 列,請確認後建立`, "ok");
+  } }, "解析成列");
+
+  const body = el("div", {},
+    el("div", { class: "bulk-shared" },
+      el("div", { class: "field" }, el("label", {}, "共用團主"), sharedKol),
+      el("div", { class: "field" }, el("label", {}, "共用廠商"), sharedVendor),
+      el("div", { class: "field" }, el("label", {}, "共用分類"), sharedCat),
+    ),
+    el("p", { class: "bulk-note" }, "共用欄位會套用到「該欄留空」的列;留空分類則用預設 " + (defaultCat || "—") + "。"),
+    el("details", { class: "bulk-paste" },
+      el("summary", {}, "快速貼上多行"),
+      el("div", { class: "bp-body" }, pasteTa, el("div", {}, pasteBtn)),
+    ),
+    rowsWrap,
+    el("div", { class: "bulk-toolbar" },
+      el("button", { class: "btn btn--sm", onclick: () => addRow(), html: I.plus + "<span>新增一列</span>" }),
+    ),
+    el("datalist", { id: "kol-list-bulk" }, ...state.facets.kols.slice(0, 80).map((x) => el("option", { value: x.value }))),
+    el("datalist", { id: "vendor-list-bulk" }, ...state.facets.vendors.slice(0, 80).map((x) => el("option", { value: x.value }))),
+    el("datalist", { id: "cat-list-bulk" }, ...state.facets.categories.map((x) => el("option", { value: x.value }))),
+  );
+
+  // 起始給 3 列空白
+  addRow(); addRow(); addRow();
+
+  const submitBtn = el("button", { class: "btn btn--primary" }, "全部建立");
+  const { close } = modal({
+    title: "批次新增開團", wide: true, body,
+    footer: [el("button", { class: "btn", onclick: () => close() }, "取消"), el("div", { class: "grow" }), countEl, submitBtn],
+  });
+
+  submitBtn.addEventListener("click", async () => {
+    rowsWrap.querySelectorAll(".brerr-msg").forEach((n) => n.remove());
+    rowModels.forEach((m) => m.row.classList.remove("brow--err"));
+
+    const submittable = rowModels.filter((m) => m.start.value); // 需有開團日
+    if (!submittable.length) { toast("請至少填一列(需開團日)", "err"); return; }
+    const items = submittable.map((m) => ({
+      startDate: m.start.value,
+      endDate: m.end.value || undefined,
+      vendor: m.vendor.value.trim() || sharedVendor.value.trim(),
+      kol: m.kol.value.trim() || sharedKol.value.trim(),
+      category: sharedCat.value.trim() || undefined,
+      linkSent: m.link.checked,
+    }));
+
+    submitBtn.disabled = true; submitBtn.innerHTML = '<span class="spin"></span>建立中';
+    try {
+      const r = await api("/campaigns/bulk", { method: "POST", body: JSON.stringify({ items }) });
+      const fails = r.results.filter((x) => !x.ok);
+      // 移除成功的列,失敗的留下並標紅
+      r.results.forEach((res, i) => {
+        const m = submittable[i];
+        if (res.ok) { const idx = rowModels.indexOf(m); if (idx >= 0) rowModels.splice(idx, 1); m.row.remove(); }
+        else { m.row.classList.add("brow--err"); m.row.append(el("div", { class: "brerr-msg" }, "✕ " + res.error)); }
+      });
+      updateCount();
+      afterMutate();
+      if (!fails.length) { toast(`成功建立 ${r.created} 筆 🎉`, "ok"); close(); }
+      else { toast(`建立 ${r.created} 筆,${fails.length} 筆需修正`, "err"); }
+    } catch (e) { toast(e.message, "err"); }
+    finally { submitBtn.disabled = false; submitBtn.textContent = "全部建立"; }
   });
 }
 

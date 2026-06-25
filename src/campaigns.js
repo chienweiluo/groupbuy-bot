@@ -109,6 +109,22 @@ export function createCampaign(input, actor = null) {
   return { ok: true, campaign: run() };
 }
 
+/**
+ * 批次新增。逐列呼叫 createCampaign(各自 transaction + audit),允許部分成功;
+ * 回傳每列結果以便前端標出失敗列。input.category 留空時一樣套 DEFAULT_CATEGORY。
+ */
+export function createCampaignsBulk(items, actor = null) {
+  const results = items.map((input, index) => {
+    try {
+      const r = createCampaign(input, actor);
+      return { index, ...r };
+    } catch (e) {
+      return { index, ok: false, error: e.message };
+    }
+  });
+  return { total: items.length, created: results.filter((r) => r.ok).length, results };
+}
+
 /** OK ✅ 冪等打勾。回傳 status: checked | already | inactive | not_found */
 export function checkLinkSent(id, actor = null, tenantId = DEFAULT_TENANT) {
   const run = db.transaction(() => {
