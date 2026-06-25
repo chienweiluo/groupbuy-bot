@@ -8,6 +8,7 @@
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
     "import": "node src/importSheet.js",
+    "sync-csv": "node scripts/sync-from-csv.mjs",
     "test": "node --test"
   },
   "engines": {

@@ -68,6 +68,27 @@ ngrok http 3000
 3. 先 dry run 確認:`node src/importSheet.js import.config.json --dry`
 4. 正式匯入:`npm run import import.config.json`(可重跑,靠自然鍵冪等去重)。
 
+## 用 CSV 同步排程(讓資料庫 = 一份 CSV)
+
+當你手上有一份維護中的排程 CSV(欄位:檔期 / 廠商 / KOL / 分潤% / 連結給了嗎(✅) / 業績),
+可用 `scripts/sync-from-csv.mjs` 把後台同步成那份 CSV——以「廠商|團主|開團日」為自然鍵:
+
+- **新增** CSV 有、DB 沒有的團 · **補勾** CSV 標 ✅ 但 DB 還沒勾的連結 · **刪除** DB 有、CSV 沒有的(被改期的舊日期殘留、測試列…)
+
+```bash
+# 先試算(只印計畫不寫入);對本機或正式站都可,看你給的 URL
+ADMIN_URL=https://xxx.up.railway.app ADMIN_TOKEN=xxx \
+  npm run sync-csv -- "/path/to/排程.csv"
+
+# 確認無誤後執行(動手前會自動備份到 backups/,可還原)
+ADMIN_URL=https://xxx.up.railway.app ADMIN_TOKEN=xxx \
+  npm run sync-csv -- "/path/to/排程.csv" --execute
+```
+
+預設安全:連結只「補勾」不退回(`--mirror-links` 可改成完全對齊);可重複執行不會重複新增
+(新增列的 sourceRow 用 +100000 偏移避開 seed 撞號)。其他選項見腳本檔頭註解
+(`--category`、`--no-delete`、`--backup-dir`)。
+
 ## 使用者指令
 
 自然語言:「新增 潔淨學 x Julia的實驗廚房 3/2-3/8」「把潔淨學改到 4/10」「取消潔淨學那團」「回填 潔淨學 業績 12000 分潤 1800」「這個月有哪些團」。
